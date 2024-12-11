@@ -1,0 +1,284 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 100;
+    display: grid;
+    grid-template-columns: 350px auto;
+    grid-template-rows: 80px auto;
+}
+/* header */
+header {
+    background-color: #ffd866;
+    grid-column: 1 / 3;
+    grid-row: 1;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+header .icon {
+    height: 35px;
+    padding: 20px;
+}
+
+.left_header {
+    display: flex;
+    align-items: center;
+}
+
+#logo {
+    height: 50px;
+    padding: 15px;
+    float: left;
+}
+
+#text_title {
+    text-align: left;
+    font-size: 24px;
+    overflow: hidden;
+    user-select: none;
+}
+
+#settings_icon {
+    float: right;
+    transition: transform 0.5s ease;
+}
+
+#settings_icon:hover {
+    transform: rotate(15deg);
+}
+
+/* Sidebar*/
+.sidebar {
+    background-color: #FEF0C6;
+    border-radius: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 10px;
+    grid-column: 1;
+    grid-row: 2;
+    margin: 20px;
+    width: 310px; /* Set initial width */
+    position: relative;
+    visibility: visible; /* Ensure the sidebar is visible by default */
+}
+
+/* tabs */
+.tabs {
+    display: flex;
+    gap: 5px;
+    margin: 20px;
+    margin-bottom: 10px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    background-color: #FEF0C6;
+    border: solid 1px black;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    border-radius: 15px;
+}
+
+.tab-btn.active {
+    background-color: #ffd866;
+    color: black;
+    border: solid 1px #ffd866;
+}
+
+/* Tab content styling */
+.tab-content {
+    display: none; /* Hide content by default */
+}
+
+.tab-content.active {
+    display: block; /* Show active tab content */
+    padding: 10px;
+}
+
+/* form */
+input[type=file] {
+    color: black;
+    padding: 8px 12px;
+    background-color: #fff;
+    border: 1px solid black;
+    border-radius: 15px;
+    margin-top: 5px;
+    height: 30px;
+    width: 90%;
+}
+
+input[type=file]::file-selector-button:hover {
+    background: #ddba5c;
+}
+
+input[type=file]::file-selector-button {
+margin-right: 5px;
+border: none;
+background: #ffd866;
+padding: 8px 12px;
+color: black;
+cursor: pointer;
+border-radius: 10px;
+}
+
+form label {
+    display: inline-block;
+    width: 200px; /* Ajustez cette largeur selon vos besoins */
+    text-align: left;
+    color: black;
+    margin-right: 10px;
+    margin-bottom: 25px;
+}
+
+.sidebar input[type="number"] {
+    display: inline-block;
+    width: 75px; /* Largeur ajustée en fonction du label */
+    padding: 8px 12px;
+    border: 1px solid black;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    background-color: white;
+    color: black;
+    text-align: center;
+}
+
+.sidebar select {
+    display: inline-block;
+    width: 100%; /* Largeur ajustée en fonction du label */
+    padding: 8px 12px;
+    border: 1px solid black;
+    border-radius: 15px;
+    margin-bottom: 15px;
+    background-color: white;
+    color: black;
+    text-align: center;
+}
+
+input[type=text] {
+    color: black;
+    padding: 8px 12px;
+    background-color: #fff;
+    border: 1px solid black;
+    border-radius: 15px;
+    width: 90%;
+    height: 25px;
+}
+
+input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.5); /* Optionnel pour agrandir les cases à cocher */
+    accent-color: #ffd866; /* Ajout de la couleur jaune */
+}
+
+input[type="checkbox"]:hover {
+    accent-color: #ddba5c;
+}
+
+input[type="radio"] {
+    transform: scale(1.5);
+    accent-color: #ffd866;
+    border: solid 1px black;
+}
+
+/* Aligner les boutons radio et leurs labels */
+.sidebar input[type="radio"] + label {
+    display: inline-block;
+    margin-left: 5px;
+    color: black;
+}
+
+/* Ajouter un espacement uniforme entre les lignes */
+.sidebar form > * {
+    margin-bottom: 10px;
+}
+
+/* Mainscreen */
+.mainscreen {
+    background-color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 25px;
+    grid-column: 2;
+    grid-row: 2;
+    margin: 20px;
+    text-align: center;
+    margin-left: 10px; /* Default left margin */
+}
+
+.mainscreen #plots_container {
+    width:97%;
+    height:97%;
+    position: relative; /* Ensure it resizes correctly inside its parent */
+    margin: auto; /* This centers the container horizontally */
+    display: block; /* Ensure it can be centered with margin auto */
+}
+
+/* Sliding menu styles */
+.sliding-menu {
+    position: absolute;
+    bottom: 0;             /* Start from the bottom */
+    height: 0;             /* Initially collapsed */
+    width: 100%;           /* Full width of the screen */
+    overflow: hidden;      /* Hide content when collapsed */
+    background-color: white;
+    color: black;
+    text-align: center;
+    transition: height 0.5s ease; /* Smooth slide effect */
+    z-index: 10;           /* Ensure it overlays content */
+}
+
+/* When the menu is open */
+.sliding-menu.open {
+    height: calc(100% - 80px); /* Leave the topbar visible (adjust 50px as needed) */
+}
+
+/* When sidebar is hidden */
+.sidebar.closed {
+    transform: translateX(-100%); /* Slide the sidebar to the left */
+    width: 0; /* Collapse the sidebar */
+    visibility: hidden; /* Hide content */
+}
+
+/* When sidebar is closed, expand the mainscreen */
+.mainscreen.expanded {
+    margin-left: -320px; /* Adjust this to match the original sidebar width */
+}
+
+.menu_content {
+    display: inline-flex;
+    width: 40%;
+    text-align: left;
+    margin: 10px 2%;
+}
+
+.menu_content input[type=number] {
+    padding: 8px 12px;
+    border-radius: 15px;
+    margin-top: 5px;
+    border: solid 1px black;
+}
+
+.menu_content input[type=checkbox] {
+    display: inline-flex;
+    margin-right: 25px;
+}
+
+/*
+#geometry_canevas {
+    border: 1px solid black;
+    width:97%;
+    height:97%;
+    position: relative;
+    margin: auto;
+    display: block;
+}*/
