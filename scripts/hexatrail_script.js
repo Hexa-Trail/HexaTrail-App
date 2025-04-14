@@ -6,31 +6,94 @@ let pivotPoints = [];
 let currentPivotIndex = 0;
 let isCapturingPivots = false;
 let userUploadedGeometry = false;
+let currentGeometryImage = null;
 const canvas = document.getElementById("geometry_canvas");
 const instruction = document.getElementById("geometry-instruction");
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 
 const MonopivotLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Frame/shock pivot",
-    "Rear triangle/shock pivot", "Frame/rear triangle pivot"
+    "Rear axle", "Front axle", "Crank axle", "Frame/shock eye",
+    "Rear triangle/shock eye", "Frame/rear triangle pivot"
 ];
-const SwingarmLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Rocker/shock pivot",
-    "Frame/shock pivot", "Near BB pivot", "Chainstay pivot",
-    "Rear bar/rocker pivot", "Rocker/frame pivot"
+const FourBarsMonopivot1Labels = [
+    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Seatstay pivot",
+    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
 ];
-const HorstlinkLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Rocker/shock pivot",
-    "Frame/shock pivot", "Near BB pivot", "Chainstay pivot",
-    "Rear bar/rocker pivot", "Rocker/frame pivot"
+const FourBarsMonopivot2Labels = [
+    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Rocker pivot",
+    "Seatstay/Rocker pivot", "Seatstay/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const FlexstayLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Rocker pivot",
+    "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const SplitpivotLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Rocker pivot",
+    "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const HorstLink4Labels = [
+    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
+    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const HorstLink4FloatingLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
+    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Chainstay/Shock eye"
+];
+const HorstLink6Labels = [
+    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
+    "Seatstay/Rocker pivot", "Rocker/Rocker-Bar pivot", "Rocker-Bar/Shock eye", "Chainstay-Bar/Shock eye",
+    "Frame/Shock eye"
+];
+const SeatstayLinkLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
+    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Seatstay/Shock eye", "Frame/Shock eye"
+];
+const DWLinkvppLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Short link/Frame pivot", "Short link/Rear triangle pivot", 
+    "Rear triangle/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const DWLinkvppFloatingLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Short link/Frame pivot", "Short link/Rear triangle pivot", 
+    "Rear triangle/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Short link/Shock eye"
+];
+const FourBarsBBRockerLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Rocker/Frame pivot", "Rocker/Rear triangle pivot",
+    "Rear triangle/Frame-bar pivot", "Frame/Frame-link pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const SixBarsDWLinkLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Lower Rocker/Frame pivot", "Lower Rocker/Chainstay pivot",
+    "Chainstay/Seatstay pivot", "Seatstay/Upper Rocker pivot", "Upper Rocker/Frame pivot", "Upper Rocker Bar pivot",
+    "Lower Rocker Bar pivot", "(any) Rocker/Shock eye", "Frame/Shock eye"
+];
+const DoubleShortLinkLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Lower Link/Frame pivot", "Lower Link/Rear Triangle pivot",
+    "Upper Link/Frame pivot", "Upper Link/Rear Triangle pivot", "Rear Triangle/Rocker pivot",
+    "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const DoubleShortLinkPivotLabels = [
+    "Rear axle", "Front axle", "Crank axle", "Lower Link/Frame pivot", "Lower Link/Chainstay pivot",
+    "Upper Link/Frame pivot", "Upper Link/Chainstay pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot",
+    "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
 ];
 
-const pivotLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Rocker/shock pivot",
-    "Frame/shock pivot", "Near BB pivot", "Chainstay pivot",
-    "Rear bar/rocker pivot", "Rocker/frame pivot"
-];
+const pivotLabelsMap = {
+    Monopivot: MonopivotLabels,
+    FourBarsMonopivot1: FourBarsMonopivot1Labels,
+    FourBarsMonopivot2: FourBarsMonopivot2Labels,
+    Flexstay: FlexstayLabels,
+    Splitpivot: SplitpivotLabels,
+    HorstLink4: HorstLink4Labels,
+    HorstLink4Floating: HorstLink4FloatingLabels,
+    HorstLink6: HorstLink6Labels,
+    SeatstayLink: SeatstayLinkLabels,
+    DWLinkvpp: DWLinkvppLabels,
+    DWLinkvppFloating: DWLinkvppFloatingLabels,
+    FourBarsBBRocker: FourBarsBBRockerLabels,
+    SixBarsDWLink: SixBarsDWLinkLabels,
+    DoubleShortLink: DoubleShortLinkLabels,
+    DoubleShortLinkPivot: DoubleShortLinkPivotLabels,
+};
 
 // HANDLERS — POPUP BUTTONS
 // Attach click event listeners to all tab buttons
@@ -272,39 +335,52 @@ function loadImageToCanvas(fileInputId, canvasId) {
         const img = new Image();
 
         img.onload = () => {
-            // Obtenez les dimensions du conteneur principal
-            const container = canvas.parentElement;
-            const maxWidth = container.clientWidth;
-            const maxHeight = container.clientHeight;
-
-            // Calculez les dimensions redimensionnées en conservant le ratio
-            const imgRatio = img.width / img.height;
-            let newWidth = maxWidth;
-            let newHeight = maxHeight;
-
-            if (newWidth / imgRatio > maxHeight) {
-                newWidth = maxHeight * imgRatio;
-            } else {
-                newHeight = newWidth / imgRatio;
-            }
-
-            // Ajustez la taille du canevas
-            canvas.width = newWidth;
-            canvas.height = newHeight;
-
-            // Nettoyez et dessinez l'image redimensionnée
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, newWidth, newHeight);
-            
+            currentGeometryImage = img;
+            resizeAndDrawGeometryImage();
             if (!useLinearKinematics && !kinematicsFile) {
                 startPivotSelection();
-            }      
-        };
-
+            }
+        };        
+        
         // Chargez l'image sélectionnée
         img.src = URL.createObjectURL(file);
     });
 }
+
+function resizeAndDrawGeometryImage() {
+    if (!currentGeometryImage) return;
+
+    const canvas = document.getElementById("geometry_canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Met à jour la taille du canvas en fonction de son style CSS (responsive)
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    const img = currentGeometryImage;
+    const imgRatio = img.width / img.height;
+    const canvasRatio = canvas.width / canvas.height;
+
+    let drawWidth, drawHeight;
+
+    if (imgRatio > canvasRatio) {
+        // Image plus large que haute → limiter largeur
+        drawWidth = canvas.width;
+        drawHeight = canvas.width / imgRatio;
+    } else {
+        // Image plus haute que large → limiter hauteur
+        drawHeight = canvas.height;
+        drawWidth = canvas.height * imgRatio;
+    }
+
+    const offsetX = (canvas.width - drawWidth) / 2;
+    const offsetY = (canvas.height - drawHeight) / 2;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+}
+
 
 // Fonction de mise à jour de l’image exemple
 function updateGeometryExample() {
@@ -315,12 +391,26 @@ function updateGeometryExample() {
     const canvas = document.getElementById("geometry_canvas");
     const ctx = canvas.getContext("2d");
     const pivotType = document.querySelector('select[name="pivottype"]').value;
+    pivotLabels = pivotLabelsMap[pivotType] || [];
 
     // Correspondances simples avec les noms de fichiers
     const pivotMap = {
-        "monopivot": "illu geo - monopivot.png",
-        "horstlink4": "illu geo - horstlink 4 bars.png",
-        "shortlink4vpp": "illu geo - short link 4 bars vpp.png"
+        "Monopivot": "illu geo - Monopivot.png",
+        "FourBarsMonopivot1": "illu geo - 4 Bars Monopivot Type 1.png",
+        "FourBarsMonopivot2": "illu geo - 4 Bars Monopivot Type 2.png",
+        "Flexstay": "illu geo - Flex Stay.png",
+        "Splitpivot": "illu geo - split pivot.png",
+        "HorstLink4": "illu geo - Horst-Link.png",
+        "HorstLink4Floating": "illu geo - Horst-Link Floating shock.png",
+        "HorstLink6": "illu geo - 6 Bars Horst-Link.png",
+        "SeatstayLink": "illu geo - Seatstay Link.png",
+        "DWLinkvpp": "illu geo - DW-Link (VPP).png",
+        "DWLinkvppFloating": "illu geo - DW-Link (VPP) floating shock.png",
+        "FourBarsBBRocker": "illu geo - 4 Bars BB Rocker (VPP).png",
+        "SixBarsDWLink": "illu geo - 6 Bars DW-link.png",
+        "DoubleShortLink": "illu geo - Double Short Link.png",
+        "DoubleShortLinkPivot": "illu geo - Double Short Link Wheelstay pivot.png",
+        "Newkine": "illu geo - exemple pending.png"
     };
 
     const fileName = pivotMap[pivotType] || "illu geo - exemple pending.png";
@@ -351,6 +441,10 @@ function updateGeometryExample() {
     };
     img.src = imagePath;
 }
+
+window.addEventListener("resize", () => {
+    resizeAndDrawGeometryImage();
+});
 
 // Run computation
 // Get references to inputs

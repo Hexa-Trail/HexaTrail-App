@@ -63,24 +63,22 @@
                 <form>
                     <label for="pivottype">Pivot type</label>
                     <select name="pivottype">
-                        <option value="monopivot">Monopivot</option>
-                        <option value="swingarm4">Swingarm 4 Bars</option>
-                        <option value="horstlink4">Horst-link 4 Bars</option>
-                        <option value="shortlink4vpp">Short link 4 Bars (VPP)</option>
-                        <option value="swingarm4shock">Swingarm 4-Bar w/ shock linkage</option>
-                        <option value="4barshock">4-Bar w/ Shock linkage</option>
-                        <option value="shortlink4vppshock">Short link 4-Bar (VPP) w/ shock linkage</option>
-                        <option value="gtidrive">GT I-Drive</option>
-                        <option value="macpherson">MacPherson</option>
-                        <option value="macphersonstrut">MacPherson Strut w/ separate Shock</option>
-                        <option value="macphersonstrut">MacPherson Strut w/ Shock Linkage</option>
-                        <option value="slideronelink">Slider with one link</option>
-                        <option value="slidersreartriangle">Sliders with Rear Triangle</option>
-                        <option value="6bar1">6-bar (1) / Chainstay Wheel</option>
-                        <option value="6bar2">6-bar (2) / Seatstay Wheel</option>
-                        <option value="6bar3">6-bar (3) / BB Linkage</option>
-                        <option value="6bar4">6-bar (4) / Seatstay Wheel</option>
-                        <option value="6bar5">6-bar (5) / Chainstay Wheel</option>
+                        <option value="Monopivot">Monopivot</option>
+                        <option value="FourBarsMonopivot1">4 Bars Monopivot Type 1</option>
+                        <option value="FourBarsMonopivot2">4 Bars Monopivot Type 2</option>
+                        <option value="Flexstay">Flex Stay</option>
+                        <option value="Splitpivot">Splitpivot</option>
+                        <option value="HorstLink4">Horst-Link</option>
+                        <option value="HorstLink4Floating">Horst-Link w/ Floating Shock</option>
+                        <option value="HorstLink6">6 Bars Horst-Link</option>
+                        <option value="SeatstayLink">Seatstay Link</option>
+                        <option value="DWLinkvpp">DW-Link (VPP)</option>
+                        <option value="DWLinkvppFloating">DW-Link (VPP) w/ Floating Shock</option>
+                        <option value="FourBarsBBRocker">4 Bars BB Rocker (VPP)</option>
+                        <option value="SixBarsDWLink">6 Bars DW-Link</option>
+                        <option value="DoubleShortLink">Double Short Link</option>
+                        <option value="DoubleShortLinkPivot">Double Short Link w/ Wheelstay Pivot</option>
+                        <option value="Newkine">Other kind</option>
                     </select>
                     <br>
                     <label for="geometry_image">Upload an image</label>
@@ -104,8 +102,10 @@
 
         <div class="mainscreen">
             <div id="plots_container"></div>
-            <canvas id="geometry_canvas"></canvas>
-            <div id="geometry-instruction" style="margin-top: 10px; font-family: 'Roboto', sans-serif; font-size: 16px;"></div>
+            <div id="geometry-wrapper">
+                <canvas id="geometry_canvas"></canvas>
+                <div id="geometry-instruction"></div>
+            </div>            
         </div>
 
         <div id="menu" class="sliding-menu">
