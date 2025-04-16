@@ -1,5 +1,5 @@
-// gestion de la cinématique
-// variables
+/* #region Geometry computing */
+// global variables
 let useLinearKinematics = false;
 let kinematicsFile = null;
 let pivotPoints = [];
@@ -12,6 +12,7 @@ const instruction = document.getElementById("geometry-instruction");
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 
+/* #region Pivot types */
 const MonopivotLabels = [
     "Rear axle", "Front axle", "Crank axle", "Frame/shock eye",
     "Rear triangle/shock eye", "Frame/rear triangle pivot"
@@ -94,8 +95,9 @@ const pivotLabelsMap = {
     DoubleShortLink: DoubleShortLinkLabels,
     DoubleShortLinkPivot: DoubleShortLinkPivotLabels,
 };
+/* #endregion */
 
-// HANDLERS — POPUP BUTTONS
+/* #region Pup up buttons */
 // Attach click event listeners to all tab buttons
 tabButtons.forEach((button) => {
     button.addEventListener("click", (event) => {
@@ -151,7 +153,17 @@ document.getElementById("length-submit").addEventListener("click", () => {
     // À suivre : calcul des ratios pixel/mm
 });
 
-// Settings menu
+function closePopup() {
+    document.getElementById("kinematics-popup").style.display = "none";
+}
+
+// POPUP DE MESURE
+function showReferenceLengthPopup() {
+    document.getElementById("length-popup").style.display = "flex";
+}
+/* #endregion */
+
+/* #region menu & sidebar */
 document.getElementById("settings_icon").addEventListener("click", () => {
     const menu = document.getElementById("menu");
     menu.classList.toggle("open");
@@ -182,20 +194,65 @@ document.getElementById("menu_icon").addEventListener("click", () => {
     }, 10); // Match transition duration in CSS
 });
 
+function removeGeometryTab() {
+    // Supprime le bouton d’onglet
+    const tabBtn = document.querySelector('button[data-tab="tab2"]');
+    if (tabBtn) tabBtn.remove();
+
+    // Supprime aussi le contenu de l’onglet
+    const tabContent = document.getElementById("tab2");
+    if (tabContent) tabContent.remove();
+
+    // Simule un clic sur le bouton "Run input" pour revenir à l'onglet principal
+    document.querySelector('button[data-tab="tab1"]').click();
+}
+
+// Function to handle tab switching
+function switchTab(event) {
+    // Get the clicked tab button
+    const clickedButton = event.target;
+    const targetTab = clickedButton.dataset.tab;
+
+    // Remove active class from all buttons and contents
+    tabButtons.forEach((button) => button.classList.remove("active"));
+    tabContents.forEach((content) => content.classList.remove("active"));
+
+    // Add active class to the clicked button and corresponding content
+    clickedButton.classList.add("active");
+    document.getElementById(targetTab).classList.add("active");
+
+    // Handle geometry tab: Show canvas and hide plots
+    const plotsContainer = document.getElementById("plots_container");
+    const geometryCanvas = document.getElementById("geometry_canvas");
+
+    if (targetTab === "tab2") {
+        plotsContainer.style.display = "none";
+        geometryCanvas.style.display = "block";
+    } else {
+        geometryCanvas.style.display = "none";
+        plotsContainer.style.display = "block";
+    }
+
+    // Gérer l'affichage de l'instruction pendant la capture
+    const instructionDiv = document.getElementById("geometry-instruction");
+
+    if (targetTab === "tab2" && isCapturingPivots) {
+        instructionDiv.textContent = `Click on: ${pivotLabels[currentPivotIndex]}`;
+    } else {
+        instructionDiv.textContent = "";
+    }
+}
+
+/* #endregion */
+
+/* #region Geometry Image management */
+// Geometry exemple image
 document.getElementById("geometry_image").addEventListener("change", () => {
     userUploadedGeometry = true;
 });
 
 // Mettre à jour à chaque changement de type de pivot
 document.querySelector('select[name="pivottype"]').addEventListener("change", updateGeometryExample);
-
-// Simulate double menu icon click on page load -> make page responsive for some reason
-window.addEventListener('load', () => {
-    document.getElementById("menu_icon").click();
-});
-window.addEventListener('load', () => {
-    document.getElementById("menu_icon").click();
-});
 
 // initialisation de l'exemple
 window.addEventListener("load", () => {
@@ -234,23 +291,6 @@ canvas.addEventListener("click", (e) => {
     }
 });
 
-function closePopup() {
-    document.getElementById("kinematics-popup").style.display = "none";
-}
-
-function removeGeometryTab() {
-    // Supprime le bouton d’onglet
-    const tabBtn = document.querySelector('button[data-tab="tab2"]');
-    if (tabBtn) tabBtn.remove();
-
-    // Supprime aussi le contenu de l’onglet
-    const tabContent = document.getElementById("tab2");
-    if (tabContent) tabContent.remove();
-
-    // Simule un clic sur le bouton "Run input" pour revenir à l'onglet principal
-    document.querySelector('button[data-tab="tab1"]').click();
-}
-
 // LANCEMENT DE LA CAPTURE — APRÈS L’IMAGE
 function startPivotSelection() {
     pivotPoints = [];
@@ -278,47 +318,6 @@ function drawRedPoint(x, y) {
     ctx.arc(x, y, 4, 0, 2 * Math.PI);
     ctx.fillStyle = "red";
     ctx.fill();
-}
-
-// POPUP DE MESURE
-function showReferenceLengthPopup() {
-    document.getElementById("length-popup").style.display = "flex";
-}
-
-// Function to handle tab switching
-function switchTab(event) {
-    // Get the clicked tab button
-    const clickedButton = event.target;
-    const targetTab = clickedButton.dataset.tab;
-
-    // Remove active class from all buttons and contents
-    tabButtons.forEach((button) => button.classList.remove("active"));
-    tabContents.forEach((content) => content.classList.remove("active"));
-
-    // Add active class to the clicked button and corresponding content
-    clickedButton.classList.add("active");
-    document.getElementById(targetTab).classList.add("active");
-
-    // Handle geometry tab: Show canvas and hide plots
-    const plotsContainer = document.getElementById("plots_container");
-    const geometryCanvas = document.getElementById("geometry_canvas");
-
-    if (targetTab === "tab2") {
-        plotsContainer.style.display = "none";
-        geometryCanvas.style.display = "block";
-    } else {
-        geometryCanvas.style.display = "none";
-        plotsContainer.style.display = "block";
-    }
-
-    // Gérer l'affichage de l'instruction pendant la capture
-    const instructionDiv = document.getElementById("geometry-instruction");
-
-    if (targetTab === "tab2" && isCapturingPivots) {
-        instructionDiv.textContent = `Click on: ${pivotLabels[currentPivotIndex]}`;
-    } else {
-        instructionDiv.textContent = "";
-    }
 }
 
 // Initialisation du canevas
@@ -380,7 +379,6 @@ function resizeAndDrawGeometryImage() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 }
-
 
 // Fonction de mise à jour de l’image exemple
 function updateGeometryExample() {
@@ -445,8 +443,20 @@ function updateGeometryExample() {
 window.addEventListener("resize", () => {
     resizeAndDrawGeometryImage();
 });
+/* #endregion */
 
-// Run computation
+// Simulate double menu icon click on page load -> make page responsive for some reason
+window.addEventListener('load', () => {
+    document.getElementById("menu_icon").click();
+});
+window.addEventListener('load', () => {
+    document.getElementById("menu_icon").click();
+});
+
+/* #endregion */
+
+/* #region Run computation */
+/* #region Getting variables to plot */
 // Get references to inputs
 const runFileInput = document.getElementById('run_file');
 const caliFileInput = document.getElementById('cali_file');
@@ -529,7 +539,9 @@ function parseCSV(file) {
         reader.readAsText(file);
     });
 }
+/* #endregion */
 
+/* #region computation functions */
 // function to derivate ie. to compute the speed
 function computeDerivative(values, time) {
     const derivatives = [];
@@ -663,7 +675,9 @@ function cutPauses(pauses, t, X, isTime = false) {
 
     return Y;
 }
+/* #endregion */
 
+/* #region plot update functions */
 // Function to update the first plot
 async function updateRawPlot(Rear, Front, Time) {
     try {
@@ -906,6 +920,7 @@ async function updateSubplot() {
         console.error('Error updating plot:', error);
     }
 }
+/* #endregion */
 
 // Add event listeners to both file inputs -> update plots
 runFileInput.addEventListener('change', updateSubplot);
@@ -923,6 +938,7 @@ regenerateButton.addEventListener('click', async () => {
     }
 });
 
+/* #region plotly variables */
 /*
 Colors :
 Front : rgba(0, 152, 241, 0.7) (bleu clair)
@@ -1131,6 +1147,8 @@ var config = {
     displaylogo: false,
     doubleClickDelay: 1000,
 }
+/* #endregion */
 
 Plotly.newPlot('plots_container', data, layout);
 
+/* #endregion */
