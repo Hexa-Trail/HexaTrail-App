@@ -1,5 +1,5 @@
 /* #region Geometry computing */
-// global variables
+/* #region global variables */
 let useLinearKinematics = false;
 let kinematicsFile = null;
 let pivotPoints = [];
@@ -11,6 +11,7 @@ const canvas = document.getElementById("geometry_canvas");
 const instruction = document.getElementById("geometry-instruction");
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
+/* #endregion */
 
 /* #region Pivot types */
 const MonopivotLabels = [
@@ -157,7 +158,7 @@ function closePopup() {
     document.getElementById("kinematics-popup").style.display = "none";
 }
 
-// POPUP DE MESURE
+// Geometry ref length popup
 function showReferenceLengthPopup() {
     document.getElementById("length-popup").style.display = "flex";
 }
@@ -445,14 +446,14 @@ window.addEventListener("resize", () => {
 });
 /* #endregion */
 
-// Simulate double menu icon click on page load -> make page responsive for some reason
+/* #region Simulate double menu icon click on page load -> make page responsive for some reason */
 window.addEventListener('load', () => {
     document.getElementById("menu_icon").click();
 });
 window.addEventListener('load', () => {
     document.getElementById("menu_icon").click();
 });
-
+/* #endregion */
 /* #endregion */
 
 /* #region Run computation */
