@@ -18,7 +18,7 @@ hr {
     border-top: 1px solid black;
 }
 
-/* header */
+/* #region header */
 header {
     background-color: #ffd866;
     grid-column: 1 / 3;
@@ -61,8 +61,9 @@ header .icon {
 #settings_icon:hover {
     transform: rotate(15deg);
 }
+/* #endregion */
 
-/* popup */
+/* #region initial popup */
 .popup-overlay {
     position: fixed;
     top: 0;
@@ -109,8 +110,9 @@ header .icon {
 .popup-content button:hover {
     background-color: #ddba5c;
 }
+/* #endregion */
 
-/* Sidebar*/
+/* #region Sidebar*/
 .sidebar {
     background-color: #FEF0C6;
     border-radius: 25px;
@@ -124,7 +126,20 @@ header .icon {
     visibility: visible; /* Ensure the sidebar is visible by default */
 }
 
-/* tabs */
+body.sidebar-closed {
+    grid-template-columns: 0 auto;
+}
+
+.sidebar.closed {
+    display: none;
+    transform: translateX(-100%); /* Slide the sidebar to the left */
+    width: 0; /* Collapse the sidebar */
+    visibility: hidden; /* Hide content */
+}
+
+/* #endregion */
+
+/* #region tabs */
 .tabs {
     display: flex;
     gap: 5px;
@@ -268,8 +283,9 @@ input[type="radio"] {
 .sidebar form > * {
     margin-bottom: 10px;
 }
+/* #endregion */
 
-/* Mainscreen */
+/* #region Mainscreen */
 .mainscreen {
     background-color: white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -289,7 +305,36 @@ input[type="radio"] {
     display: block; /* Ensure it can be centered with margin auto */
 }
 
-/* Sliding menu styles */
+/* When sidebar is closed, expand the mainscreen */
+.mainscreen.expanded {
+    margin-left: -320px; /* Adjust this to match the original sidebar width */
+}
+
+#geometry-wrapper {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+}
+
+#geometry_canvas {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    background: white;
+}
+
+#geometry-instruction {
+    padding: 10px;
+    font-size: 16px;
+    text-align: center;
+    font-weight: bold;
+    font-family: 'Roboto', sans-serif;
+}
+/* #endregion */
+
+/* #region Sliding menu */
 .sliding-menu {
     position: absolute;
     bottom: 0;             /* Start from the bottom */
@@ -307,19 +352,9 @@ input[type="radio"] {
 .sliding-menu.open {
     height: calc(100% - 80px); /* Leave the topbar visible (adjust 50px as needed) */
 }
+/* #endregion */
 
-/* When sidebar is hidden */
-.sidebar.closed {
-    transform: translateX(-100%); /* Slide the sidebar to the left */
-    width: 0; /* Collapse the sidebar */
-    visibility: hidden; /* Hide content */
-}
-
-/* When sidebar is closed, expand the mainscreen */
-.mainscreen.expanded {
-    margin-left: -320px; /* Adjust this to match the original sidebar width */
-}
-
+/* #region Menu */
 .menu_content {
     display: inline-flex;
     width: 40%;
@@ -354,6 +389,9 @@ input[type="radio"] {
     background-color: #ddba5c;
 }
 
+/* #endregion */
+
+/* #region Kinematics pop up */
 #length-popup select,
 #length-popup input[type="number"] {
     color: black;
@@ -395,29 +433,4 @@ input[type="radio"] {
     margin: 10px 0;
     font-family: 'Roboto', sans-serif;
 }
-
-/* Wrapper pour que le canvas occupe tout l'espace */
-#geometry-wrapper {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: stretch;
-}
-
-/* Canvas responsive qui s'étend */
-#geometry_canvas {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    background: white;
-}
-
-/* Instruction positionnée sous le canvas */
-#geometry-instruction {
-    padding: 10px;
-    font-size: 16px;
-    text-align: center;
-    font-weight: bold;
-    font-family: 'Roboto', sans-serif;
-}
+/* #endregion */

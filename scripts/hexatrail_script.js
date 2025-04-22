@@ -1,5 +1,5 @@
 /* #region Geometry computing */
-/* #region global variables */
+    /* #region global variables */
 let useLinearKinematics = false;
 let kinematicsFile = null;
 let pivotPoints = [];
@@ -13,7 +13,7 @@ const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 /* #endregion */
 
-/* #region Pivot types */
+    /* #region Pivot types */
 const MonopivotLabels = [
     "Rear axle", "Front axle", "Crank axle", "Frame/shock eye",
     "Rear triangle/shock eye", "Frame/rear triangle pivot"
@@ -98,7 +98,7 @@ const pivotLabelsMap = {
 };
 /* #endregion */
 
-/* #region Pup up buttons */
+    /* #region Pup up buttons */
 // Attach click event listeners to all tab buttons
 tabButtons.forEach((button) => {
     button.addEventListener("click", (event) => {
@@ -164,7 +164,7 @@ function showReferenceLengthPopup() {
 }
 /* #endregion */
 
-/* #region menu & sidebar */
+    /* #region menu & sidebar */
 document.getElementById("settings_icon").addEventListener("click", () => {
     const menu = document.getElementById("menu");
     menu.classList.toggle("open");
@@ -246,7 +246,7 @@ function switchTab(event) {
 
 /* #endregion */
 
-/* #region Geometry Image management */
+    /* #region Geometry Image management */
 // Geometry exemple image
 document.getElementById("geometry_image").addEventListener("change", () => {
     userUploadedGeometry = true;
@@ -446,7 +446,7 @@ window.addEventListener("resize", () => {
 });
 /* #endregion */
 
-/* #region Simulate double menu icon click on page load -> make page responsive for some reason */
+    /* #region Simulate double menu icon click on page load -> make page responsive for some reason */
 window.addEventListener('load', () => {
     document.getElementById("menu_icon").click();
 });
@@ -454,10 +454,11 @@ window.addEventListener('load', () => {
     document.getElementById("menu_icon").click();
 });
 /* #endregion */
+
 /* #endregion */
 
 /* #region Run computation */
-/* #region Getting variables to plot */
+    /* #region Getting variables to plot */
 // Get references to inputs
 const runFileInput = document.getElementById('run_file');
 const caliFileInput = document.getElementById('cali_file');
@@ -542,7 +543,7 @@ function parseCSV(file) {
 }
 /* #endregion */
 
-/* #region computation functions */
+    /* #region computation functions */
 // function to derivate ie. to compute the speed
 function computeDerivative(values, time) {
     const derivatives = [];
@@ -678,7 +679,7 @@ function cutPauses(pauses, t, X, isTime = false) {
 }
 /* #endregion */
 
-/* #region plot update functions */
+    /* #region plot update functions */
 // Function to update the first plot
 async function updateRawPlot(Rear, Front, Time) {
     try {
@@ -939,7 +940,7 @@ regenerateButton.addEventListener('click', async () => {
     }
 });
 
-/* #region plotly variables */
+    /* #region plotly variables */
 /*
 Colors :
 Front : rgba(0, 152, 241, 0.7) (bleu clair)
