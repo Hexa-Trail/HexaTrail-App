@@ -394,7 +394,7 @@ function updateGeometryExample() {
 
     // Correspondances simples avec les noms de fichiers
     const pivotMap = {
-        "Monopivot": "illu geo - Monopivot.png",
+        "Monopivot": "illu geo - monopivot.png",
         "FourBarsMonopivot1": "illu geo - 4 Bars Monopivot Type 1.png",
         "FourBarsMonopivot2": "illu geo - 4 Bars Monopivot Type 2.png",
         "Flexstay": "illu geo - Flex Stay.png",
