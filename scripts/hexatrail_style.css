@@ -10,52 +10,61 @@ body {
     font-family: 'Roboto', sans-serif;
     font-weight: 100;
     display: grid;
-    grid-template-columns: 350px auto;
-    grid-template-rows: 80px auto;
+    grid-template-columns: 22rem auto;
+    grid-template-rows: 4rem auto;
+    height: 100vh;
 }
 
 hr {
-    border-top: 1px solid black;
+    border-top: 1px solid black; /* Black line */
 }
 
 /* #region header */
 header {
-    background-color: #ffd866;
-    grid-column: 1 / 3;
-    grid-row: 1;
-    padding: 0;
-    margin: 0;
-    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    background: #ffd866;
+    color: black;
+    padding: 0.5rem;
     display: flex;
     justify-content: space-between;
-}
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
 
-header .icon {
-    height: 35px;
-    padding: 20px;
-}
-
-.left_header {
+/* Conteneur logo + titre */
+.brand {
     display: flex;
     align-items: center;
-}
-
-#logo {
-    height: 50px;
-    padding: 15px;
-    float: left;
-}
-
-#text_title {
+    gap: 0.5rem;
+    font-size: 0.6rem;
     text-align: left;
-    font-size: 24px;
-    overflow: hidden;
     user-select: none;
+  }
+  
+/* Logo */
+#logo {
+    height: 3rem;
+    padding-left: 0.5rem;
+    vertical-align: middle;
+    display: inline-block;
+}
+
+/* Icônes */
+.icon {
+    height: 2rem;
+    padding: 0.5rem;
+    cursor: pointer;
 }
 
 #settings_icon {
     float: right;
     transition: transform 0.5s ease;
+    margin-right: 1rem;
 }
 
 #settings_icon:hover {
@@ -120,10 +129,11 @@ header .icon {
     box-shadow: 10px;
     grid-column: 1;
     grid-row: 2;
-    margin: 20px;
-    width: 310px; /* Set initial width */
+    margin: 1rem;
+    width: 20rem; /* Set initial width */
     position: relative;
     visibility: visible; /* Ensure the sidebar is visible by default */
+    overflow-y: auto;
 }
 
 body.sidebar-closed {
@@ -292,9 +302,8 @@ input[type="radio"] {
     border-radius: 25px;
     grid-column: 2;
     grid-row: 2;
-    margin: 20px;
+    margin: 1rem;
     text-align: center;
-    margin-left: 10px; /* Default left margin */
 }
 
 .mainscreen #plots_container {
@@ -307,12 +316,13 @@ input[type="radio"] {
 
 /* When sidebar is closed, expand the mainscreen */
 .mainscreen.expanded {
-    margin-left: -320px; /* Adjust this to match the original sidebar width */
+    margin-left: -21rem; /* Adjust this to match the original sidebar width */
 }
 
 #geometry-wrapper {
-    height: 100%;
-    width: 100%;
+    height: 97%;
+    width: 97%;
+    margin: auto;
     display: flex;
     flex-direction: column;
     justify-content: stretch;
@@ -330,7 +340,6 @@ input[type="radio"] {
     font-size: 16px;
     text-align: center;
     font-weight: bold;
-    font-family: 'Roboto', sans-serif;
 }
 /* #endregion */
 
@@ -433,4 +442,58 @@ input[type="radio"] {
     margin: 10px 0;
     font-family: 'Roboto', sans-serif;
 }
+/* #endregion */
+
+/* #region Responsive : mobile → tout en colonne */
+@media (max-width: 768px) {
+    body {
+        display: block;
+        padding-top: 4rem; /* header fixe */
+        overflow-x: hidden;
+        overflow-y: visible;
+      }
+    
+    .sidebar {
+        display: none;
+        position: fixed;
+        top: 4rem;
+        left: 0;
+        width: 100vw;
+        height: calc(100dvh - 4rem);
+        background: #FEF0C6;
+        z-index: 999;
+        overflow-y: auto;
+        padding: 1rem;
+        border-radius: 0 0 25px 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .sidebar.mobile-open {
+        display: block;
+    }
+
+    .mainscreen {
+        display: none;
+        height: 100%;
+    }
+
+    .mainscreen.mobile-open {
+        display: block;
+    }
+  
+    #plots_container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      align-items: center;
+    }
+  
+    #plots_container > * {
+      width: 100% !important;
+      max-width: 100%;
+    }
+  }
+  
+
 /* #endregion */

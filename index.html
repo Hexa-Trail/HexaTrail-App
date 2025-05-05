@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <title>HxT Telemetry app</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/x-icon" href="./assets/Hexa Trail logo v3.png">
         <link href="./scripts/hexatrail_style.css" rel="stylesheet">
         <script src="./scripts/plotly-2.35.2.min.js" charset="utf-8"></script>
@@ -10,14 +11,14 @@
 
     <body>
         <header>
-            <div class="left_header">
+            <div class="brand">
                 <img src="./assets/feather_icons/menu.svg" draggable="false" class="icon" id="menu_icon">
-                <img src="./assets/Hexa Trail logo v3.png" draggable="false" id="logo">
-                <h1 id="text_title">Hexa Trail - Telemetry app</h1>
+                <img src="./assets/Hexa Trail logo v3.png" draggable="false" id="logo" alt="HexaTrail logo">
+                <h1>HexaTrail – Telemetry app</h1>
             </div>
-            <div><img src="./assets/feather_icons/settings.svg" draggable="false" class="icon" id="settings_icon"></div>
+            <img src="./assets/feather_icons/settings.svg" draggable="false" class="icon" id="settings_icon">
         </header>
-        
+          
         <div id="kinematics-popup" class="popup-overlay">
             <div class="popup-content">
                 <h2>Select kinematics method</h2>
