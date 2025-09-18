@@ -1,5 +1,6 @@
 /* #region Geometry computing */
     /* #region global variables */
+    //Test
 let useLinearKinematics = false;
 let kinematicsFile = null;
 let pivotPoints = [];
