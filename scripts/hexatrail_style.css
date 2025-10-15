@@ -136,6 +136,10 @@ header {
     overflow-y: auto;
 }
 
+#tab2 {
+    overflow-y: auto; /* doesn't work for some reason */
+}
+
 body.sidebar-closed {
     grid-template-columns: 0 auto;
 }
