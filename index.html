@@ -2,8 +2,8 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>HxT Telemetry app</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>HxT Telemetry app</title>
         <link rel="icon" type="image/x-icon" href="./assets/Hexa Trail logo v3.png">
         <link href="./scripts/hexatrail_style.css" rel="stylesheet">
         <script src="./scripts/plotly-2.35.2.min.js" charset="utf-8"></script>
@@ -11,14 +11,14 @@
 
     <body>
         <header>
-            <div class="brand">
+            <div class="left_header">
                 <img src="./assets/feather_icons/menu.svg" draggable="false" class="icon" id="menu_icon">
-                <img src="./assets/Hexa Trail logo v3.png" draggable="false" id="logo" alt="HexaTrail logo">
-                <h1>HexaTrail – Telemetry app</h1>
+                <img src="./assets/Hexa Trail logo v3.png" draggable="false" id="logo">
+                <h1 id="text_title">Hexa Trail - Telemetry app</h1>
             </div>
-            <img src="./assets/feather_icons/settings.svg" draggable="false" class="icon" id="settings_icon">
+            <div><img src="./assets/feather_icons/settings.svg" draggable="false" class="icon" id="settings_icon"></div>
         </header>
-          
+        
         <div id="kinematics-popup" class="popup-overlay">
             <div class="popup-content">
                 <h2>Select kinematics method</h2>
@@ -95,8 +95,9 @@
                     <label for="ShockTravel">Shock travel</label><br>
                     <input type="number" name="ShockTravel" id="ShockTravel" min="0" max="100" step="0.5" value="47">
                 </form>
-                <hr>
-                <button type="button" id="regenerate-btn">Regenerate</button>
+                <div id="linear-placeholder" style="display:none; margin: 10px 0;">
+                    <p style="font-family: 'Roboto', sans-serif; font-size: 16px;">Linear kinematics</p>
+                </div>
             </div>
         </div>
 

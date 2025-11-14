@@ -1,5 +1,6 @@
 /* #region Geometry computing */
     /* #region global variables */
+    //Test
 let useLinearKinematics = false;
 let kinematicsFile = null;
 let pivotPoints = [];
@@ -455,43 +456,6 @@ window.addEventListener('load', () => {
 });
 /* #endregion */
 
-    /* #region mobile management */
-function openSidebarMobile() {
-    const sidebar = document.querySelector('.sidebar');
-    const mainscreen = document.querySelector('.mainscreen');
-    if (sidebar && mainscreen) {
-        sidebar.classList.add('mobile-open');
-        mainscreen.classList.remove('mobile-open');
-    }
-}
-    
-function openMainScreenMobile() {
-    const sidebar = document.querySelector('.sidebar');
-    const mainscreen = document.querySelector('.mainscreen');
-    if (sidebar && mainscreen) {
-        sidebar.classList.remove('mobile-open');
-        mainscreen.classList.add('mobile-open');
-    }
-}
-    
-document.addEventListener('DOMContentLoaded', () => {
-    const menuIcon = document.getElementById('menu_icon');
-    if (menuIcon) {
-        menuIcon.addEventListener('click', () => {
-            const sidebar = document.querySelector('.sidebar');
-            const isVisible = sidebar?.classList.contains('mobile-open');
-            if (window.innerWidth <= 768) {
-                isVisible ? openMainScreenMobile() : openSidebarMobile();
-            }
-        });
-    }
-    
-    // Affiche le main screen par défaut au chargement mobile
-    if (window.innerWidth <= 768) {
-        openMainScreenMobile();
-    }
-});
-    /* #endregion */
 /* #endregion */
 
 /* #region Run computation */

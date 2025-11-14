@@ -1,70 +1,68 @@
 html, body {
     margin: 0;
     padding: 0;
-    height: 100dvh;
-    width: 100dvw;
-    overflow: hidden;
+    min-height: 100vh;   /* au moins la hauteur de l’écran */
+    width: 100%;         /* prend toute la largeur dispo */
+    overflow-x: hidden;  /* pas de scroll horizontal */
+    overflow-y: auto; 
 }
 
 body {
     font-family: 'Roboto', sans-serif;
     font-weight: 100;
     display: grid;
-    grid-template-columns: 22rem auto;
-    grid-template-rows: 4rem auto;
-    height: 100vh;
+    grid-template-columns: 350px auto;
+    grid-template-rows: 80px auto;
 }
 
 hr {
-    border-top: 1px solid black; /* Black line */
+    border-top: 1px solid black;
 }
 
 /* #region header */
 header {
+    background-color: #ffd866;
+    grid-column: 1 / 3;
+    grid-row: 1;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    z-index: 100;
-    background: #ffd866;
-    color: black;
-    padding: 0.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-/* Conteneur logo + titre */
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.6rem;
-    text-align: left;
-    user-select: none;
-  }
-  
-/* Logo */
-#logo {
-    height: 3rem;
-    padding-left: 0.5rem;
-    vertical-align: middle;
-    display: inline-block;
+    right: 0;
+    height: 80px;    /* même hauteur que celle prévue dans ta grille */
+    z-index: 1000;   /* pour rester au-dessus du reste */
 }
 
-/* Icônes */
-.icon {
-    height: 2rem;
-    padding: 0.5rem;
-    cursor: pointer;
+header .icon {
+    height: 35px;
+    padding: 20px;
+}
+
+.left_header {
+    display: flex;
+    align-items: center;
+}
+
+#logo {
+    height: 50px;
+    padding: 15px;
+    float: left;
+}
+
+#text_title {
+    text-align: left;
+    font-size: 24px;
+    overflow: hidden;
+    user-select: none;
 }
 
 #settings_icon {
     float: right;
     transition: transform 0.5s ease;
-    margin-right: 1rem;
 }
 
 #settings_icon:hover {
@@ -129,15 +127,10 @@ header {
     box-shadow: 10px;
     grid-column: 1;
     grid-row: 2;
-    margin: 1rem;
-    width: 20rem; /* Set initial width */
+    margin: 20px;
+    width: 310px; /* Set initial width */
     position: relative;
     visibility: visible; /* Ensure the sidebar is visible by default */
-    overflow-y: auto;
-}
-
-#tab2 {
-    overflow-y: auto; /* doesn't work for some reason */
 }
 
 body.sidebar-closed {
@@ -306,8 +299,9 @@ input[type="radio"] {
     border-radius: 25px;
     grid-column: 2;
     grid-row: 2;
-    margin: 1rem;
+    margin: 20px;
     text-align: center;
+    margin-left: 10px; /* Default left margin */
 }
 
 .mainscreen #plots_container {
@@ -320,13 +314,12 @@ input[type="radio"] {
 
 /* When sidebar is closed, expand the mainscreen */
 .mainscreen.expanded {
-    margin-left: -21rem; /* Adjust this to match the original sidebar width */
+    margin-left: -320px; /* Adjust this to match the original sidebar width */
 }
 
 #geometry-wrapper {
-    height: 97%;
-    width: 97%;
-    margin: auto;
+    height: 100%;
+    width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: stretch;
@@ -344,6 +337,49 @@ input[type="radio"] {
     font-size: 16px;
     text-align: center;
     font-weight: bold;
+    font-family: 'Roboto', sans-serif;
+}
+/* #endregion */
+
+/* #region responsove sidebar and mainscreen */
+/* Layout 1 colonne quand l'écran est trop étroit
+   (sinon la mainscreen ferait moins de la moitié de la largeur) */
+@media (max-width: 720px) {
+
+    /* La grille ne contient plus qu'une colonne,
+       une ligne pour la sidebar et une pour la mainscreen */
+    body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        padding-top: 80px;  /* même valeur que la hauteur du header */
+    }
+
+    /* Même en mode sidebar fermée, on garde une seule colonne */
+    body.sidebar-closed {
+        grid-template-columns: 1fr;
+    }
+
+    /* Sidebar en haut, pleine largeur */
+    .sidebar {
+        grid-column: 1;
+        grid-row: 1;
+        width: auto;           /* plus de largeur fixe à 310px */
+        margin: 10px 10px 0;   /* un peu de marge en haut et sur les côtés */
+    }
+
+    /* Mainscreen en dessous, pleine largeur */
+    .mainscreen {
+        grid-column: 1;
+        grid-row: 2;
+        margin: 10px;          /* marges symétriques */
+        margin-left: 10px;     /* pour écraser le margin-left existant proprement */
+    }
+
+    /* Quand la sidebar est "fermée" en mobile,
+       on évite le décalage négatif prévu pour le layout 2 colonnes */
+    .mainscreen.expanded {
+        margin-left: 10px;     /* même marge que .mainscreen normale */
+    }
 }
 /* #endregion */
 
@@ -446,58 +482,4 @@ input[type="radio"] {
     margin: 10px 0;
     font-family: 'Roboto', sans-serif;
 }
-/* #endregion */
-
-/* #region Responsive : mobile → tout en colonne */
-@media (max-width: 768px) {
-    body {
-        display: block;
-        padding-top: 4rem; /* header fixe */
-        overflow-x: hidden;
-        overflow-y: visible;
-      }
-    
-    .sidebar {
-        display: none;
-        position: fixed;
-        top: 4rem;
-        left: 0;
-        width: 100vw;
-        height: calc(100dvh - 4rem);
-        background: #FEF0C6;
-        z-index: 999;
-        overflow-y: auto;
-        padding: 1rem;
-        border-radius: 0 0 25px 25px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    .sidebar.mobile-open {
-        display: block;
-    }
-
-    .mainscreen {
-        display: none;
-        height: 100%;
-    }
-
-    .mainscreen.mobile-open {
-        display: block;
-    }
-  
-    #plots_container {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      padding: 1rem;
-      align-items: center;
-    }
-  
-    #plots_container > * {
-      width: 100% !important;
-      max-width: 100%;
-    }
-  }
-  
-
 /* #endregion */
