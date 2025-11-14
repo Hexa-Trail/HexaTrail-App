@@ -1,9 +1,10 @@
 html, body {
     margin: 0;
     padding: 0;
-    height: 100dvh;
-    width: 100dvw;
-    overflow: hidden;
+    min-height: 100vh;   /* au moins la hauteur de l’écran */
+    width: 100%;         /* prend toute la largeur dispo */
+    overflow-x: hidden;  /* pas de scroll horizontal */
+    overflow-y: auto; 
 }
 
 body {
@@ -28,6 +29,12 @@ header {
     align-items: center;
     display: flex;
     justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;    /* même hauteur que celle prévue dans ta grille */
+    z-index: 1000;   /* pour rester au-dessus du reste */
 }
 
 header .icon {
@@ -334,23 +341,138 @@ input[type="radio"] {
 }
 /* #endregion */
 
+/* #region responsove sidebar and mainscreen */
+/* Layout 1 colonne quand l'écran est trop étroit
+   (sinon la mainscreen ferait moins de la moitié de la largeur) */
+@media (max-width: 720px) {
+
+    /* La grille ne contient plus qu'une colonne,
+       une ligne pour la sidebar et une pour la mainscreen */
+    body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        padding-top: 80px;  /* même valeur que la hauteur du header */
+    }
+
+    /* Même en mode sidebar fermée, on garde une seule colonne */
+    body.sidebar-closed {
+        grid-template-columns: 1fr;
+    }
+
+    /* Sidebar en haut, pleine largeur */
+    .sidebar {
+        grid-column: 1;
+        grid-row: 1;
+        width: auto;           /* plus de largeur fixe à 310px */
+        margin: 10px 10px 0;   /* un peu de marge en haut et sur les côtés */
+    }
+
+    /* Mainscreen en dessous, pleine largeur */
+    .mainscreen {
+        grid-column: 1;
+        grid-row: 2;
+        margin: 10px;          /* marges symétriques */
+        margin-left: 10px;     /* pour écraser le margin-left existant proprement */
+    }
+
+    /* Quand la sidebar est "fermée" en mobile,
+       on évite le décalage négatif prévu pour le layout 2 colonnes */
+    .mainscreen.expanded {
+        margin-left: 10px;     /* même marge que .mainscreen normale */
+    }
+
+    /* 4.1 - Empiler les labels et inputs dans la sidebar */
+    .sidebar form label {
+        display: block;        /* prend toute la largeur */
+        width: 100%;           /* plus de largeur fixe 200px */
+        margin-right: 0;
+        margin-bottom: 6px;    /* petit espace sous le label */
+        text-align: left;      /* plus naturel en mobile */
+    }
+
+    .sidebar input[type="number"],
+    .sidebar input[type="file"],
+    .sidebar select,
+    .sidebar input[type="text"] {
+        width: 100%;           /* l’input prend toute la largeur dispo */
+        box-sizing: border-box;/* inclut padding/bordures dans les 100% */
+    }
+
+    input[type="file"] {
+        height: auto;          /* laisse le navigateur gérer la hauteur */
+    }
+
+    /* 5.2 - En très étroit, on enlève le texte du titre pour garder de l'espace */
+    #text_title {
+        display: none;
+    }
+
+    header {
+        justify-content: space-between;
+    }
+
+    header .icon {
+        padding: 8px;     /* un peu plus compact encore */
+    }
+
+    .sliding-menu {
+        text-align: left;
+        padding: 0;                 /* pas de padding quand fermé */
+    }
+
+    .sliding-menu.open {
+        padding: 10px 16px 16px;    /* padding seulement quand le menu est ouvert */
+    }
+
+    .sliding-menu .menu_content {
+        display: block;
+        width: 100%;
+        margin-bottom: 16px;
+    }
+}
+
+/* 5.1 - Alléger le header quand la largeur diminue un peu */
+@media (max-width: 1200px) {
+    #text_title {
+        font-size: 18px;   /* au lieu de 24px */
+    }
+
+    header .icon {
+        padding: 12px;     /* au lieu de 20px */
+    }
+
+    #logo {
+        height: 42px;      /* léger downscale */
+        padding: 10px;
+    }
+}
+/* #endregion */
+
 /* #region Sliding menu */
 .sliding-menu {
-    position: absolute;
-    bottom: 0;             /* Start from the bottom */
-    height: 0;             /* Initially collapsed */
-    width: 100%;           /* Full width of the screen */
-    overflow: hidden;      /* Hide content when collapsed */
+    position: fixed;
+    top: 80px;                         /* collé juste sous la topbar */
+    left: 0;
+    right: 0;
+    height: 0;                         /* fermé */
+    max-height: calc(100vh - 80px);    /* zone max sous la topbar */
+    width: 100%;
+    overflow: hidden;                  /* on cache tout quand c’est fermé */
     background-color: white;
     color: black;
     text-align: center;
-    transition: height 0.5s ease; /* Smooth slide effect */
-    z-index: 10;           /* Ensure it overlays content */
+    transition: height 0.5s ease;      /* on anime la hauteur */
+    z-index: 10;                       /* sous le header qui est à 1000 */
 }
 
 /* When the menu is open */
 .sliding-menu.open {
-    height: calc(100% - 80px); /* Leave the topbar visible (adjust 50px as needed) */
+    height: calc(100vh - 80px);  /* prend toute la hauteur dispo sous la topbar */
+    overflow-y: auto;            /* si le contenu dépasse, scroll interne */
+}
+
+.sliding-menu .menu_content {
+    padding-bottom: 20px;
 }
 /* #endregion */
 
