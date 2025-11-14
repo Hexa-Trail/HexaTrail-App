@@ -225,13 +225,22 @@ function switchTab(event) {
 
     // Handle geometry tab: Show canvas and hide plots
     const plotsContainer = document.getElementById("plots_container");
+    const geometryWrapper = document.getElementById("geometry-wrapper");
     const geometryCanvas = document.getElementById("geometry_canvas");
 
     if (targetTab === "tab2") {
+        // Onglet "Geometry" : on affiche la zone géométrie, on cache les plots
         plotsContainer.style.display = "none";
+        geometryWrapper.style.display = "flex";
         geometryCanvas.style.display = "block";
+
+        if (!userUploadedGeometry && !useLinearKinematics) {
+            updateGeometryExample();
+        }
     } else {
+        // Onglet "Run input" : on cache complètement la zone géométrie
         geometryCanvas.style.display = "none";
+        geometryWrapper.style.display = "none";
         plotsContainer.style.display = "block";
     }
 
@@ -259,8 +268,6 @@ document.querySelector('select[name="pivottype"]').addEventListener("change", up
 // initialisation de l'exemple
 window.addEventListener("load", () => {
     loadImageToCanvas("geometry_image", "geometry_canvas");
-    // Initialiser le canevas avec l'exemple du pivot par défaut (monopivot)
-    updateGeometryExample();
 });
 
 // CLICK CANVAS POUR ACQUISITION DE PIVOT
@@ -352,48 +359,48 @@ function resizeAndDrawGeometryImage() {
     if (!currentGeometryImage) return;
 
     const canvas = document.getElementById("geometry_canvas");
-    const ctx = canvas.getContext("2d");
+    const wrapper = document.getElementById("geometry-wrapper");
+    if (!canvas || !wrapper) return;
 
-    // Met à jour la taille du canvas en fonction de son style CSS (responsive)
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    // Largeur disponible dans le wrapper (mainscreen)
+    const rect = wrapper.getBoundingClientRect();
+    const availableWidth = rect.width;
+    if (availableWidth <= 0) return;
 
     const img = currentGeometryImage;
     const imgRatio = img.width / img.height;
-    const canvasRatio = canvas.width / canvas.height;
 
-    let drawWidth, drawHeight;
+    // On part sur : largeur = largeur dispo
+    let drawWidth = availableWidth;
+    let drawHeight = drawWidth / imgRatio;
 
-    if (imgRatio > canvasRatio) {
-        // Image plus large que haute → limiter largeur
-        drawWidth = canvas.width;
-        drawHeight = canvas.width / imgRatio;
-    } else {
-        // Image plus haute que large → limiter hauteur
-        drawHeight = canvas.height;
-        drawWidth = canvas.height * imgRatio;
+    // Hauteur max : fenêtre - topbar (~80px) - un peu de marge
+    const maxHeight = window.innerHeight - 80 - 20;
+    if (drawHeight > maxHeight) {
+        drawHeight = maxHeight;
+        drawWidth = drawHeight * imgRatio;
     }
 
-    const offsetX = (canvas.width - drawWidth) / 2;
-    const offsetY = (canvas.height - drawHeight) / 2;
+    // On fixe l'espace de dessin interne du canvas
+    canvas.width = drawWidth;
+    canvas.height = drawHeight;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, drawWidth, drawHeight);
+
+    // On dessine l'image en occupant tout le canvas, sans le recentrer avec des offsets
+    ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
 }
 
 // Fonction de mise à jour de l’image exemple
 function updateGeometryExample() {
+    // Si l'utilisateur a uploadé sa propre image ou qu'on est en mode cinématique linéaire,
+    // on ne touche plus à l'image d'illustration.
     if (userUploadedGeometry || useLinearKinematics) return;
 
-    if (userUploadedGeometry) return; // ne pas écraser l'image utilisateur
-
-    const canvas = document.getElementById("geometry_canvas");
-    const ctx = canvas.getContext("2d");
     const pivotType = document.querySelector('select[name="pivottype"]').value;
     pivotLabels = pivotLabelsMap[pivotType] || [];
 
-    // Correspondances simples avec les noms de fichiers
     const pivotMap = {
         "Monopivot": "illu geo - monopivot.png",
         "FourBarsMonopivot1": "illu geo - 4 Bars Monopivot Type 1.png",
@@ -418,29 +425,13 @@ function updateGeometryExample() {
 
     const img = new Image();
     img.onload = () => {
-        // Redimensionnement et affichage sur le canevas
-        const container = canvas.parentElement;
-        const maxWidth = container.clientWidth;
-        const maxHeight = container.clientHeight;
-
-        const imgRatio = img.width / img.height;
-        let newWidth = maxWidth;
-        let newHeight = maxHeight;
-
-        if (newWidth / imgRatio > maxHeight) {
-            newWidth = maxHeight * imgRatio;
-        } else {
-            newHeight = newWidth / imgRatio;
-        }
-
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        // On utilise exactement le même pipeline que pour l'image uploadée
+        currentGeometryImage = img;
+        resizeAndDrawGeometryImage();
     };
     img.src = imagePath;
 }
+
 
 window.addEventListener("resize", () => {
     resizeAndDrawGeometryImage();
