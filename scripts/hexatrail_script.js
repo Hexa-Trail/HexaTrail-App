@@ -1,6 +1,5 @@
 /* #region Geometry computing */
     /* #region global variables */
-    //Test
 let useLinearKinematics = false;
 let kinematicsFile = null;
 let pivotPoints = [];
@@ -12,6 +11,57 @@ const canvas = document.getElementById("geometry_canvas");
 const instruction = document.getElementById("geometry-instruction");
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
+// Nouvelles variables pour la conversion pixels → millimètres
+let pxToMmRatio = 1.0;      // Ratio px/mm
+let pivotPointsMm = [];     // Coordonnées converties en mm
+/* #endregion */
+
+    /* #region Fonctions calcul pivot */
+/**
+ * Distance euclidienne entre deux points en pixels.
+ */
+function getPixelDistance(p1, p2) {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+}
+
+/**
+ * Convertit tous les pivots (pivotPoints) de pixels en millimètres.
+ * Utilise 'Crank axle' comme origine (0,0) et inverse l'axe Y.
+ * Stocke le résultat dans 'pivotPointsMm'.
+ */
+function convertPivotsToMm() {
+    // 1. Origine = Crank axle
+    const originPx = pivotPoints.find(p => p.label === "Crank axle");
+    
+    if (!originPx) {
+        alert("Error: 'Crank axle' pivot not found. Cannot set coordinate origin.");
+        return;
+    }
+
+    if (pxToMmRatio === 1.0 || isNaN(pxToMmRatio)) {
+        alert("Error: Pixel-to-MM ratio is invalid. Cannot convert coordinates.");
+        return;
+    }
+
+    // 2. Conversion
+    pivotPointsMm = pivotPoints.map(point => {
+        const deltaX_px = point.x - originPx.x;
+
+        // Axe Y canvas inversé -> on le remet en convention math (0 en bas)
+        const deltaY_px = originPx.y - point.y;
+
+        return {
+            label: point.label,
+            x: deltaX_px / pxToMmRatio,
+            y: deltaY_px / pxToMmRatio
+        };
+    });
+
+    console.log("Converted MM Coordinates (Origin = Crank):", pivotPointsMm);
+    alert("Geometry successfully captured and converted to millimeters!");
+
+    // C’est ici que tu brancheras ton moteur cinématique plus tard
+}
 /* #endregion */
 
     /* #region Pivot types */
@@ -147,13 +197,93 @@ document.getElementById("length-submit").addEventListener("click", () => {
         return;
     }
 
+    // --- Début logique calcul du ratio ---
+
+    // Map entre type de longueur de référence et pivots associés
+    // ⚠️ Les clés ("wheelbase", "shock-length-monopivot", etc.)
+    // doivent correspondre exactement aux value des <option> du select HTML.
+    const referenceLengthMap = {
+        "wheelbase": ["Rear axle", "Front axle"],
+        "shock-length-monopivot": ["Frame/shock eye", "Rear triangle/shock eye"],
+        "shock-length-4bar": ["Frame/Shock eye", "Rocker/Shock eye"],
+        "chainstay": ["Crank axle", "Rear axle"],
+        // Ajoute d'autres types si besoin
+    };
+
+    const pointLabels = referenceLengthMap[type];
+    if (!pointLabels) {
+        alert(`Error: Reference type "${type}" is not recognized in the script.`);
+        return;
+    }
+
+    // Chercher les points correspondants dans pivotPoints
+    const p1 = pivotPoints.find(p => p.label === pointLabels[0]);
+    const p2 = pivotPoints.find(p => p.label === pointLabels[1]);
+
+    if (!p1 || !p2) {
+        alert(`Error: Could not find required pivots "${pointLabels[0]}" or "${pointLabels[1]}" in the captured data.`);
+        return;
+    }
+
+    // 1. Calculer le ratio
+    const distanceInPixels = getPixelDistance(p1, p2);
+
+    // pxToMmRatio = nb de pixels pour 1 mm
+    pxToMmRatio = distanceInPixels / value;
+
+    if (isNaN(pxToMmRatio) || pxToMmRatio <= 0) {
+        alert("Error calculating pixel ratio. Check your values.");
+        pxToMmRatio = 1.0;
+        return;
+    }
+
+    console.log(`Reference: ${type} = ${value} mm`);
+    console.log(`Pixel distance: ${distanceInPixels.toFixed(2)} px`);
+    console.log(`Calculated Ratio: ${pxToMmRatio.toFixed(4)} px/mm`);
+
     document.getElementById("length-popup").style.display = "none";
 
-    console.log("Captured Pivots:", pivotPoints);
-    console.log(`Reference: ${type} = ${value} mm`);
+    // 2. Conversion des pivots en mm
+    convertPivotsToMm();
 
-    // À suivre : calcul des ratios pixel/mm
+    // --- Fin de la logique ---
 });
+
+// Bouton d'export de la géométrie
+document.getElementById("export-geometry-btn").addEventListener("click", () => {
+    exportGeometryToTxt();
+});
+
+/**
+ * Exporter les coordonnées de pivots (en mm) dans un fichier .txt
+ */
+function exportGeometryToTxt() {
+    if (pivotPointsMm.length === 0) {
+        alert("No millimeter-converted geometry data to export. Please capture and convert the pivots first.");
+        return;
+    }
+
+    let fileContent = "Hexatrail Geometry Export\n";
+    fileContent += `Timestamp: ${new Date().toISOString()}\n`;
+    fileContent += "Units: millimeters (mm)\n";
+    fileContent += "Origin: Crank axle (0,0)\n";
+    fileContent += "----------------------------------\n\n";
+
+    pivotPointsMm.forEach(point => {
+        fileContent += `${point.label}: X=${point.x.toFixed(3)}, Y=${point.y.toFixed(3)}\n`;
+    });
+
+    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.href = url;
+    link.download = "hexatrail_geometry.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 
 function closePopup() {
     document.getElementById("kinematics-popup").style.display = "none";

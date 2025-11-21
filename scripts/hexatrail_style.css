@@ -144,6 +144,7 @@ body.sidebar-closed {
     visibility: hidden; /* Hide content */
 }
 
+
 /* #endregion */
 
 /* #region tabs */
@@ -181,7 +182,7 @@ body.sidebar-closed {
     padding: 10px;
 }
 
-.sidebar #regenerate-btn {
+.sidebar .btn {
     flex: 1;
     padding: 10px 20px;
     background-color: #ffd866;
@@ -190,7 +191,7 @@ body.sidebar-closed {
     border: none;
 }
 
-.sidebar #regenerate-btn:hover {
+.sidebar .btn:hover {
     border: solid 1px black;
 }
 
