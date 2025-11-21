@@ -251,34 +251,75 @@ document.getElementById("length-submit").addEventListener("click", () => {
 
 // Bouton d'export de la géométrie
 document.getElementById("export-geometry-btn").addEventListener("click", () => {
-    exportGeometryToTxt();
+    exportGeometryToCsv();
 });
 
-/**
- * Exporter les coordonnées de pivots (en mm) dans un fichier .txt
- */
-function exportGeometryToTxt() {
+function exportGeometryToCsv() {
     if (pivotPointsMm.length === 0) {
         alert("No millimeter-converted geometry data to export. Please capture and convert the pivots first.");
         return;
     }
 
-    let fileContent = "Hexatrail Geometry Export\n";
-    fileContent += `Timestamp: ${new Date().toISOString()}\n`;
-    fileContent += "Units: millimeters (mm)\n";
-    fileContent += "Origin: Crank axle (0,0)\n";
-    fileContent += "----------------------------------\n\n";
+    // Récupération marque / modèle
+    const brandInput = document.getElementById("brand");
+    const modelInput = document.getElementById("model");
 
+    let brand = (brandInput?.value || "").trim() || "unknownBrand";
+    let model = (modelInput?.value || "").trim() || "unknownModel";
+
+    const sanitize = (str, fallback) => {
+        const cleaned = str
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // enlever accents
+            .replace(/[^a-zA-Z0-9]+/g, "_")                   // remplacer non-alphanum par "_"
+            .replace(/^_+|_+$/g, "");                         // trim "_"
+        return cleaned || fallback;
+    };
+
+    brand = sanitize(brand, "unknownBrand");
+    model = sanitize(model, "unknownModel");
+
+    const filename = `${brand}_${model}_geometry_mm.csv`;
+
+    // Construction du CSV
+    const rows = [];
+    rows.push(["pivot label", "x", "y"].join(","));
+
+    // 1) Lignes de débattement (avant / arrière / amorto)
+    const frontTravelInput = document.getElementById("frontTravel");
+    const rearTravelInput  = document.getElementById("rearTravel");
+    const shockTravelInput = document.getElementById("ShockTravel");
+
+    const frontTravel = Number(frontTravelInput?.value || 0);
+    const rearTravel  = Number(rearTravelInput?.value || 0);
+    const shockTravel = Number(shockTravelInput?.value || 0);
+
+    // On n'ajoute les lignes que si une valeur est renseignée (> 0)
+    if (frontTravel > 0) {
+        rows.push([`"Front travel (mm)"`, frontTravel.toFixed(3), ""].join(","));
+    }
+    if (rearTravel > 0) {
+        rows.push([`"Rear travel (mm)"`, rearTravel.toFixed(3), ""].join(","));
+    }
+    if (shockTravel > 0) {
+        rows.push([`"Shock stroke (mm)"`, shockTravel.toFixed(3), ""].join(","));
+    }
+
+    // 2) Lignes de pivots (comme avant)
     pivotPointsMm.forEach(point => {
-        fileContent += `${point.label}: X=${point.x.toFixed(3)}, Y=${point.y.toFixed(3)}\n`;
+        const safeLabel = `"${String(point.label).replace(/"/g, '""')}"`;
+        const x = point.x.toFixed(3);
+        const y = point.y.toFixed(3);
+        rows.push([safeLabel, x, y].join(","));
     });
 
-    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" });
-    const link = document.createElement("a");
+    const csvContent = rows.join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
 
     link.href = url;
-    link.download = "hexatrail_geometry.txt";
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
