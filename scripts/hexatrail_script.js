@@ -405,10 +405,18 @@ canvas.addEventListener("click", (e) => {
     if (!isCapturingPivots || currentPivotIndex >= pivotLabels.length) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    
+    // Facteurs d'échelle entre la taille affichée et la taille interne du canvas
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // Coordonnées de la souris dans le repère interne du canvas
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top)  * scaleY;
 
     pivotPoints.push({ label: pivotLabels[currentPivotIndex], x, y });
+
+    // On dessine dans le repère interne du canvas, donc avec x,y déjà scalés
     drawRedPoint(x, y);
 
     currentPivotIndex++;
