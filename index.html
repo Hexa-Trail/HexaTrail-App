@@ -18,13 +18,20 @@
             </div>
             <div><img src="./assets/feather_icons/settings.svg" draggable="false" class="icon" id="settings_icon"></div>
         </header>
-        
-        <div id="kinematics-popup" class="popup-overlay">
-            <div class="popup-content">
-                <h2>Select kinematics method</h2>
-                <button id="linear-kinematics">Use linear kinematics</button>
-                <button id="load-geometry">Load a bike geometry</button>
-                <button id="compute-geometry">Compute your bike geometry</button>
+
+        <div id="kinematics-popup" class="popup-root">
+            <div class="popup-backdrop"></div>
+            <div class="popup-overlay">
+                <div class="glass-card popup-content">
+                    <h2>Select kinematics method</h2>
+                    <p>Choose how you want to compute kinematics.</p>
+
+                    <div class="popup-actions">
+                        <button id="linear-kinematics" class="btn-ghost">Use linear kinematics</button>
+                        <button id="load-geometry" class="btn-primary">Load geometry</button>
+                        <button id="compute-geometry" class="btn-primary">Compute geometry</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -38,26 +45,23 @@
                 <form>
                     <label for="run_file">Your run file</label>
                     <input type="file" name="run_file" id="run_file" accept=".csv">
-                    <br>
+                    
                     <label for="cali_file">Your calibration file</label>
                     <input type="file" name="cali_file" id="cali_file" accept=".csv">
                     <hr>
                     <input type="checkbox" name="pause" id="pause">
                     <label for="pause">Cut the pauses</label>
-                    <br>
+                    
                     <label for="averaging">Rolling averaging period (s)</label>
                     <input type="number" name="averaging" id="averaging" min="0" max="20" step="0.01" value="0.2">
-                    <br>
+                    
                     <label for="runid">Run / setup number</label>
                     <input type="number" name="runid" id="runid" min="0" step="1" value="1">
                     <hr>
-                    <input type="radio" name="graph_stats" id="graphical" value="graph" checked="checked">
-                    <label for="graphical">Graphical analysis</label><br>
-                    <input type="radio" name="graph_stats" id="numerical" value="stats">
-                    <label for="numerical">Numerical analysis</label><br>
+                    <button type="button" class="btn-ghost" id="stats-btn">Run stats</button>
                 </form>
                 <hr>
-                <button type="button" class="btn" id="regenerate-btn">Regenerate</button>
+                <button type="button" class="btn-primary" id="regenerate-btn">Regenerate</button>
             </div>
             <!-- Sidebar : tab 2, geometry -->
             <div class="tab-content side_content" id="tab2">
@@ -81,18 +85,18 @@
                         <option value="DoubleShortLinkPivot">Double Short Link w/ Wheelstay Pivot</option>
                         <option value="Newkine">Other kind</option>
                     </select>
-                    <br>
+                    
                     <label for="geometry_image">Upload an image</label>
                     <input type="file" id="geometry_image" accept="image/*">
                     <label for="brand">Bike brand</label>
                     <input type="text" name="brand" id="brand">
                     <label for="model">Bike model</label>
                     <input type="text" name="model" id="model">
-                    <label for="frontTravel">Front wheel travel</label><br>
+                    <label for="frontTravel">Front wheel travel</label>
                     <input type="number" name="frontTravel" id="frontTravel" min="0" max="250" step="5" value="130">
-                    <label for="rearTravel">Rear wheel travel</label><br>
+                    <label for="rearTravel">Rear wheel travel</label>
                     <input type="number" name="rearTravel" id="rearTravel" min="0" max="250" step="5" value="130">
-                    <label for="ShockTravel">Shock travel</label><br>
+                    <label for="ShockTravel">Shock travel</label>
                     <input type="number" name="ShockTravel" id="ShockTravel" min="0" max="100" step="0.5" value="47">
                 </form>
                 <button type="button" class="btn" id="export-geometry-btn">Export Geometry</button>
@@ -108,74 +112,102 @@
         </div>
 
         <div id="menu" class="sliding-menu">
-            <!-- Menu : analysis settings -->
-            <div class="menu_content" id="analysis_var">
-                <form>
-                    <label for="frontPot">Front sensor travel (mm)</label><br>
-                    <input type="number" name="frontPot" id="frontPot" min="0" max="250" step="5" value="150">
-                    <br><br>
-                    <label for="rearPot">Rear sensor travel (mm)</label><br>
-                    <input type="number" name="rearPot" id="rearPot" min="0" max="250" step="5" value="100">
-                    <br><br>
-                    <label for="frontPotVal">Front sensor maximum value</label><br>
-                    <input type="number" name="frontPotVal" id="frontPotVal" min="0" max="100000" step="1" value="26270">
-                    <br><br>
-                    <label for="frontPotVal">Front sensor maximum value</label><br>
-                    <input type="number" name="rearPotVal" id="rearPotVal" min="0" max="100000" step="1" value="26270">
-                    <hr>
-                    <p>Available fork settings</p>
-                    <label for="Fcomp">Compression</label>
-                    <input type="checkbox" name="Fcomp" id="Fcomp" checked>
-                    <label for="Freb">Rebound</label>
-                    <input type="checkbox" name="Freb" id="Freb" checked>
-                    <label for="Fspeed">HS / LS</label>
-                    <input type="checkbox" name="Fspeed" id="Fspeed">
-                    <p>Available rear suspension settings</p>
-                    <label for="Rcomp">Compression</label>
-                    <input type="checkbox" name="Rcomp" id="Rcomp">
-                    <label for="Rreb">Rebound</label>
-                    <input type="checkbox" name="Rreb" id="Rreb" checked>
-                    <label for="Rspeed">HS / LS</label>
-                    <input type="checkbox" name="Rspeed" id="Rspeed">
-                    <hr>
-                    <button type="button" id="reset-kinematics-btn">Reset Kinematics Setup</button>
-                </form>
-            </div>
-            <!-- Menu : app's settings -->
-            <div class="menu_content" id="app_var">
-                <form>
-                    <label for="log_scale">Speed histogram in log scale</label>
-                    <input type="checkbox" name="log_scale" id="log_scale" checked>
-                    <br>
-                    <label for="pause_tol">Cut pauses tolerance</label>
-                    <input type="number" name="pause_tol" id="pause_tol" min="0" value="1.6">
-                    <br>
-                    <label for="Speed_hist_lim">Speed Histogram x axis limits</label>
-                    <input type="number" name="Speed_hist_lim" id="Speed_hist_lim" min="0" step="100" value="2000">
-                    <hr>
-                    <label for="appearance">App's appearance mode</label>
-                    <select name="appearance">
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                        <option value="system">System</option>
-                    </select>
-                </form>
+            <div class="sliding-menu-panel glass-card">
+                <div class="sliding-menu-header">
+                    <h2>Kinematics & app settings</h2>
+                    <p>Configure sensors, kinematics options and display preferences for your analysis.</p>
+                </div>
+
+                <div class="sliding-menu-body">
+                    <!-- Bloc 1 : Suspension & capteurs -->
+                    <div class="menu_content" id="analysis_var">
+                        <h3>Suspension & sensors</h3>
+                        <form>
+                            <label for="frontPot">Front sensor travel (mm)</label>
+                            <input type="number" name="frontPot" id="frontPot" min="0" max="250" step="5" value="150">
+
+                            <label for="rearPot">Rear sensor travel (mm)</label>
+                            <input type="number" name="rearPot" id="rearPot" min="0" max="250" step="5" value="100">
+
+                            <label for="frontPotVal">Front sensor maximum value</label>
+                            <input type="number" name="frontPotVal" id="frontPotVal" min="0" max="100000" step="1" value="26270">
+
+                            <label for="rearPotVal">Rear sensor maximum value</label>
+                            <input type="number" name="rearPotVal" id="rearPotVal" min="0" max="100000" step="1" value="26270">
+                            <hr>
+
+                            <p>Available fork settings</p>
+                            <label for="Fcomp">Compression</label>
+                            <input type="checkbox" name="Fcomp" id="Fcomp" checked>
+                            <label for="Freb">Rebound</label>
+                            <input type="checkbox" name="Freb" id="Freb" checked>
+                            <label for="Fspeed">HS / LS</label>
+                            <input type="checkbox" name="Fspeed" id="Fspeed">
+
+                            <p>Available rear suspension settings</p>
+                            <label for="Rcomp">Compression</label>
+                            <input type="checkbox" name="Rcomp" id="Rcomp">
+                            <label for="Rreb">Rebound</label>
+                            <input type="checkbox" name="Rreb" id="Rreb" checked>
+                            <label for="Rspeed">HS / LS</label>
+                            <input type="checkbox" name="Rspeed" id="Rspeed">
+                        </form>
+                    </div>
+
+                    <!-- Bloc 2 : Réglages d'affichage et app -->
+                    <div class="menu_content" id="app_var">
+                        <h3>Display & app behaviour</h3>
+                        <form>
+                            <label for="log_scale">Speed histogram in log scale</label>
+                            <input type="checkbox" name="log_scale" id="log_scale" checked>
+
+                            <label for="pause_tol">Cut pauses tolerance</label>
+                            <input type="number" name="pause_tol" id="pause_tol" min="0" value="1.6">
+
+                            <label for="Speed_hist_lim">Speed Histogram x axis limits</label>
+                            <input type="number" name="Speed_hist_lim" id="Speed_hist_lim" min="0" step="100" value="2000">
+                            <hr>
+
+                            <label for="appearance">App's appearance mode</label>
+                            <select name="appearance" id="appearance">
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                                <option value="system">System</option>
+                            </select>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="sliding-menu-footer">
+                    <button type="button" id="reset-kinematics-btn" class="btn-ghost">
+                        Reset kinematics setup
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div id="length-popup" class="popup-overlay" style="display:none;">
-            <div class="popup-content">
-                <h2>Reference Length</h2>
-                <p style="font-family: 'Roboto', sans-serif;">Enter one known length (in mm)</p>
-                <select id="length-type">
-                    <option value="chainstay">Chainstay length</option>
-                    <option value="wheelbase">Wheelbase</option>
-                    <option value="shock">Shock length</option>
-                </select>
-                <input type="number" id="length-value" placeholder="Value in mm" style="margin-top:10px; width: 90%;">
-                <button id="length-submit" style="margin-top: 15px;">Validate</button>
+
+        <div id="length-popup" class="popup-root">
+            <div class="popup-backdrop"></div>
+            <div class="popup-overlay">
+                <div class="glass-card popup-content">
+                    <h2>Reference Length</h2>
+                    <p>Enter one known length (in mm) to scale your geometry.</p>
+
+                    <select id="length-type">
+                        <option value="chainstay">Chainstay length</option>
+                        <option value="wheelbase">Wheelbase</option>
+                        <option value="shock">Shock length</option>
+                    </select>
+
+                    <input type="number" id="length-value" placeholder="Value in mm">
+
+                    <div class="popup-actions">
+                        <button id="length-submit" class="btn-primary">Validate</button>
+                    </div>
+                </div>
             </div>
-        </div>        
+        </div>
 
         <script src="./scripts/hexatrail_script.js"></script>
     </body>

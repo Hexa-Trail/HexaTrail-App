@@ -1,3 +1,13 @@
+:root {
+    --radius-lg: 2rem;
+    --shadow-strong: 0 1.4rem 3rem rgba(15, 18, 40, 0.35);
+    --color-muted: #6d7383;
+    --color-accent: #ffd866;
+    --color-text: #111827;
+    --popup-backdrop-blur: 3px;  /* flou de l'arrière-plan */
+    --popup-card-blur: 50px;      /* flou interne de la carte */
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -11,8 +21,8 @@ body {
     font-family: 'Roboto', sans-serif;
     font-weight: 100;
     display: grid;
-    grid-template-columns: 350px auto;
-    grid-template-rows: 80px minmax(calc(100vh - 80px), auto);
+    grid-template-columns: 20rem auto;
+    grid-template-rows: 4rem minmax(calc(100vh - 4rem), auto);
 }
 
 hr {
@@ -33,13 +43,13 @@ header {
     top: 0;
     left: 0;
     right: 0;
-    height: 80px;    /* même hauteur que celle prévue dans ta grille */
+    height: 4rem;    /* même hauteur que celle prévue dans ta grille */
     z-index: 1000;   /* pour rester au-dessus du reste */
 }
 
 header .icon {
-    height: 35px;
-    padding: 20px;
+    height: 2rem;
+    padding: 1rem;
 }
 
 .left_header {
@@ -48,14 +58,14 @@ header .icon {
 }
 
 #logo {
-    height: 50px;
-    padding: 15px;
+    height: 3rem;
+    padding: 1rem;
     float: left;
 }
 
 #text_title {
     text-align: left;
-    font-size: 24px;
+    font-size: 16px;
     overflow: hidden;
     user-select: none;
 }
@@ -70,65 +80,16 @@ header .icon {
 }
 /* #endregion */
 
-/* #region initial popup */
-.popup-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
-}
-
-.popup-content {
-    background: #FEF0C6;
-    padding: 20px;
-    border-radius: 25px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    width: 300px;
-}
-
-.popup-content h2 {
-    font-family: 'Roboto', sans-serif;
-    font-size: 20px;
-    color: black;
-    margin-bottom: 15px;
-}
-
-.popup-content button {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    margin: 5px 0;
-    background-color: #ffd866;
-    border: solid 1px black;
-    cursor: pointer;
-    text-align: center;
-    border-radius: 15px;
-    font-family: 'Roboto', sans-serif;
-}
-
-.popup-content button:hover {
-    background-color: #ddba5c;
-}
-/* #endregion */
-
 /* #region Sidebar*/
 .sidebar {
     background-color: #FEF0C6;
-    border-radius: 25px;
+    border-radius: 2rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     box-shadow: 10px;
     grid-column: 1;
     grid-row: 2;
-    margin: 20px;
-    width: 310px; /* Set initial width */
+    margin: 1rem;
+    width: 20rem; /* Set initial width */
     position: relative;
     visibility: visible; /* Ensure the sidebar is visible by default */
 }
@@ -144,26 +105,23 @@ body.sidebar-closed {
     visibility: hidden; /* Hide content */
 }
 
-
-/* #endregion */
-
 /* #region tabs */
 .tabs {
     display: flex;
-    gap: 5px;
-    margin: 20px;
-    margin-bottom: 10px;
+    gap: 0.5rem;
+    margin: 1rem;
+    margin-bottom: 1rem;
 }
 
 .tab-btn {
     flex: 1;
-    padding: 10px;
+    padding: 1rem;
     background-color: #FEF0C6;
     border: solid 1px black;
     cursor: pointer;
     text-align: center;
     transition: background-color 0.3s ease;
-    border-radius: 15px;
+    border-radius: 1rem;
 }
 
 .tab-btn.active {
@@ -179,15 +137,15 @@ body.sidebar-closed {
 
 .tab-content.active {
     display: block; /* Show active tab content */
-    padding: 10px;
+    padding: 1rem;
 }
 
 .sidebar .btn {
     flex: 1;
-    padding: 10px 20px;
+    padding: 1rem 2rem;
     background-color: #ffd866;
     text-align: center;
-    border-radius: 15px;
+    border-radius: 1rem;
     border: none;
 }
 
@@ -198,12 +156,12 @@ body.sidebar-closed {
 /* form */
 input[type=file] {
     color: black;
-    padding: 8px 12px;
+    padding: 0.5rem 1rem;
     background-color: #fff;
     border: 1px solid black;
-    border-radius: 15px;
-    margin-top: 5px;
-    height: 30px;
+    border-radius: 1rem;
+    margin-top: 0.5rem;
+    height: 2rem;
     width: 90%;
 }
 
@@ -212,31 +170,31 @@ input[type=file]::file-selector-button:hover {
 }
 
 input[type=file]::file-selector-button {
-margin-right: 5px;
+margin-right: 0.5rem;
 border: none;
 background: #ffd866;
-padding: 8px 12px;
+padding: 0.5rem 1rem;
 color: black;
 cursor: pointer;
-border-radius: 10px;
+border-radius: 1rem;
 }
 
 form label {
     display: inline-block;
-    width: 200px; /* Ajustez cette largeur selon vos besoins */
+    width: 7rem; /* Ajustez cette largeur selon vos besoins */
     text-align: left;
     color: black;
-    margin-right: 10px;
-    margin-bottom: 25px;
+    margin-right: 1rem;
+    margin-bottom: 2rem;
 }
 
 .sidebar input[type="number"] {
     display: inline-block;
-    width: 75px; /* Largeur ajustée en fonction du label */
-    padding: 8px 12px;
+    width: 5rem; /* Largeur ajustée en fonction du label */
+    padding: 0.5rem 1rem;
     border: 1px solid black;
-    border-radius: 15px;
-    margin-bottom: 15px;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
     background-color: white;
     color: black;
     text-align: center;
@@ -245,10 +203,10 @@ form label {
 .sidebar select {
     display: inline-block;
     width: 100%; /* Largeur ajustée en fonction du label */
-    padding: 8px 12px;
+    padding: 0.5rem 1rem;
     border: 1px solid black;
-    border-radius: 15px;
-    margin-bottom: 15px;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
     background-color: white;
     color: black;
     text-align: center;
@@ -256,16 +214,16 @@ form label {
 
 input[type=text] {
     color: black;
-    padding: 8px 12px;
-    background-color: #fff;
+    padding: 0.5rem 1rem;
+    background-color: white;
     border: 1px solid black;
-    border-radius: 15px;
+    border-radius: 1rem;
     width: 90%;
-    height: 25px;
+    height: 2rem;
 }
 
 input[type="checkbox"] {
-    margin-right: 10px;
+    margin-right: 1rem;
     transform: scale(1.5); /* Optionnel pour agrandir les cases à cocher */
     accent-color: #ffd866; /* Ajout de la couleur jaune */
 }
@@ -283,26 +241,27 @@ input[type="radio"] {
 /* Aligner les boutons radio et leurs labels */
 .sidebar input[type="radio"] + label {
     display: inline-block;
-    margin-left: 5px;
+    margin-left: 1rem;
     color: black;
 }
 
 /* Ajouter un espacement uniforme entre les lignes */
 .sidebar form > * {
-    margin-bottom: 10px;
+    margin-bottom: 1rem;
 }
+/* #endregion */
 /* #endregion */
 
 /* #region Mainscreen */
 .mainscreen {
     background-color: white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border-radius: 25px;
+    border-radius: 2rem;
     grid-column: 2;
     grid-row: 2;
-    margin: 20px;
+    margin: 1rem;
     text-align: center;
-    margin-left: 10px; /* Default left margin */
+    margin-left: 2rem; /* Default left margin */
 }
 
 .mainscreen #plots_container {
@@ -315,7 +274,7 @@ input[type="radio"] {
 
 /* When sidebar is closed, expand the mainscreen */
 .mainscreen.expanded {
-    margin-left: -320px; /* Adjust this to match the original sidebar width */
+    margin-left: -19rem; /* Adjust this to match the original sidebar width */
 }
 
 #geometry-wrapper {
@@ -333,7 +292,7 @@ input[type="radio"] {
 }
 
 #geometry-instruction {
-    padding: 10px;
+    padding: 1rem;
     font-size: 16px;
     text-align: center;
     font-weight: bold;
@@ -342,16 +301,15 @@ input[type="radio"] {
 /* #endregion */
 
 /* #region responsove sidebar and mainscreen */
-/* Layout 1 colonne quand l'écran est trop étroit
-   (sinon la mainscreen ferait moins de la moitié de la largeur) */
-@media (max-width: 720px) {
+/* Layout 1 colonne quand l'écran est trop étroit (sinon la mainscreen ferait moins de la moitié de la largeur) */
+@media (max-width: 40rem) {
 
     /* La grille ne contient plus qu'une colonne,
        une ligne pour la sidebar et une pour la mainscreen */
     body {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto;
-        padding-top: 80px;  /* même valeur que la hauteur du header */
+        padding-top: 4rem;  /* même valeur que la hauteur du header */
     }
 
     /* Même en mode sidebar fermée, on garde une seule colonne */
@@ -363,30 +321,31 @@ input[type="radio"] {
     .sidebar {
         grid-column: 1;
         grid-row: 1;
-        width: auto;           /* plus de largeur fixe à 310px */
-        margin: 10px 10px 0;   /* un peu de marge en haut et sur les côtés */
+        width: auto;
+        margin: 1rem 1rem 0;   /* un peu de marge en haut et sur les côtés */
     }
 
     /* Mainscreen en dessous, pleine largeur */
     .mainscreen {
         grid-column: 1;
         grid-row: 2;
-        margin: 10px;          /* marges symétriques */
-        margin-left: 10px;     /* pour écraser le margin-left existant proprement */
+        margin: 1rem;          /* marges symétriques */
+        margin-left: 1rem;     /* pour écraser le margin-left existant proprement */
+        height: 80rem;
     }
 
     /* Quand la sidebar est "fermée" en mobile,
        on évite le décalage négatif prévu pour le layout 2 colonnes */
     .mainscreen.expanded {
-        margin-left: 10px;     /* même marge que .mainscreen normale */
+        margin-left: 1rem;     /* même marge que .mainscreen normale */
     }
 
     /* 4.1 - Empiler les labels et inputs dans la sidebar */
     .sidebar form label {
         display: block;        /* prend toute la largeur */
-        width: 100%;           /* plus de largeur fixe 200px */
+        width: 100%;
         margin-right: 0;
-        margin-bottom: 6px;    /* petit espace sous le label */
+        margin-bottom: 1rem;    /* petit espace sous le label */
         text-align: left;      /* plus naturel en mobile */
     }
 
@@ -412,147 +371,316 @@ input[type="radio"] {
     }
 
     header .icon {
-        padding: 8px;     /* un peu plus compact encore */
-    }
-
-    .sliding-menu {
-        text-align: left;
-        padding: 0;                 /* pas de padding quand fermé */
-    }
-
-    .sliding-menu.open {
-        padding: 10px 16px 16px;    /* padding seulement quand le menu est ouvert */
-    }
-
-    .sliding-menu .menu_content {
-        display: block;
-        width: 100%;
-        margin-bottom: 16px;
+        padding: 0.5rem;     /* un peu plus compact encore */
     }
 }
 
 /* 5.1 - Alléger le header quand la largeur diminue un peu */
-@media (max-width: 1200px) {
+@media (max-width: 75rem) {
     #text_title {
         font-size: 18px;   /* au lieu de 24px */
     }
 
     header .icon {
-        padding: 12px;     /* au lieu de 20px */
+        padding: 1rem;     /* au lieu de 20px */
     }
 
     #logo {
-        height: 42px;      /* léger downscale */
-        padding: 10px;
+        height: 3rem;      /* léger downscale */
+        padding: 1rem;
     }
 }
 /* #endregion */
 
-/* #region Sliding menu */
+/* #region Sliding menu - bottom glass card */
 .sliding-menu {
     position: fixed;
-    top: 80px;                         /* collé juste sous la topbar */
     left: 0;
     right: 0;
-    height: 0;                         /* fermé */
-    max-height: calc(100vh - 80px);    /* zone max sous la topbar */
+    bottom: 0;
+    top: 5rem;
+    z-index: 900; /* sous le header (1000), au-dessus du reste */
+    pointer-events: none; /* la carte gère les clics */
+}
+
+/* Overlay sombre + flou derrière la carte quand le menu est ouvert */
+.sliding-menu::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    backdrop-filter: blur(var(--popup-backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--popup-backdrop-blur));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease-out;
+    z-index: 0;            /* derrière la carte (panel) mais devant le contenu */
+}
+
+/* Quand le menu est ouvert, on affiche le flou de fond */
+.sliding-menu.open::before {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Grosse carte qui remonte du bas */
+.sliding-menu-panel {
+    margin: 0 auto;
+    max-width: 72rem;                  /* plus large → 2 colonnes confort */
     width: 100%;
-    overflow: hidden;                  /* on cache tout quand c’est fermé */
-    background-color: white;
-    color: black;
-    text-align: center;
-    transition: height 0.5s ease;      /* on anime la hauteur */
-    z-index: 10;                       /* sous le header qui est à 1000 */
-}
 
-/* When the menu is open */
-.sliding-menu.open {
-    height: calc(100vh - 80px);  /* prend toute la hauteur dispo sous la topbar */
-    overflow-y: auto;            /* si le contenu dépasse, scroll interne */
-}
+    padding: 1.5rem 1.75rem;
+    border-radius: 1.75rem 1.75rem 0 0;
 
-.sliding-menu .menu_content {
-    padding-bottom: 20px;
-}
-/* #endregion */
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(var(--popup-card-blur));
+    -webkit-backdrop-filter: blur(var(--popup-card-blur));
+    box-shadow: 0 -1.2rem 3rem rgba(15, 18, 40, 0.32);
 
-/* #region Menu */
-.menu_content {
-    display: inline-flex;
-    width: 40%;
-    text-align: left;
-    margin: 10px 2%;
-}
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
 
-.menu_content input[type=number] {
-    padding: 8px 12px;
-    border-radius: 15px;
-    margin-top: 5px;
-    border: solid 1px black;
-}
-
-.menu_content input[type=checkbox] {
-    display: inline-flex;
-    margin-right: 25px;
-}
-
-#reset-kinematics-btn {
-    padding: 10px 20px;
-    border: 1px solid black;
-    border-radius: 15px;
-    background-color: #ffd866;
-    cursor: pointer;
-    font-family: 'Roboto', sans-serif;
-    margin-top: 15px;
-    width: 90%;
-}
-
-#reset-kinematics-btn:hover {
-    background-color: #ddba5c;
-}
-
-/* #endregion */
-
-/* #region Kinematics pop up */
-#length-popup select,
-#length-popup input[type="number"] {
-    color: black;
-    padding: 8px 12px;
-    background-color: #fff;
-    border: 1px solid black;
-    border-radius: 15px;
-    font-family: 'Roboto', sans-serif;
-    width: 90%;
-    text-align: center;
-}
-
-#length-popup button {
-    padding: 10px;
-    background-color: #ffd866;
-    border: 1px solid black;
-    border-radius: 15px;
-    font-family: 'Roboto', sans-serif;
-    cursor: pointer;
-    width: 90%;
-}
-
-#length-popup button:hover {
-    background-color: #ddba5c;
-}
-
-#length-popup .popup-content {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+
+    /* Hauteur max = hauteur viewport - header (~5rem) - marge (1.5rem) */
+    max-height: calc(100vh - 10rem); /* pourquoi 10rem ?? */
+    margin-bottom: 1rem;              /* petit gap avec le bas de l'écran */
+
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
 }
 
-#length-popup select,
-#length-popup input[type="number"],
-#length-popup button {
-    width: 90%;
-    max-width: 300px;
-    margin: 10px 0;
-    font-family: 'Roboto', sans-serif;
+/* Ouvert : la carte remonte */
+.sliding-menu.open .sliding-menu-panel {
+    transform: translateY(0);
+}
+
+/* Header de la carte */
+.sliding-menu-header h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.25rem;
+}
+
+.sliding-menu-header p {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+}
+
+/* Corps du menu, scrollable si besoin */
+.sliding-menu-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+
+    flex: 1;                /* prend tout l'espace dispo */
+    overflow-y: auto;       /* scroll interne si trop de contenu */
+    padding-right: 0.25rem;
+    flex-direction: row;    /* → par défaut : colonnes côte à côte (desktop) */
+}
+
+/* Chaque bloc de paramètres */
+.sliding-menu-body .menu_content {
+    flex: 1 1 20rem;        /* base ~320px, s'agrandit si possible */
+    min-width: 20rem;
+}
+
+/* Titre de section dans le menu */
+.sliding-menu-body .menu_content h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+/* Inputs du menu (on recycle le look existant) */
+.sliding-menu-body .menu_content input[type=number] {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.9375rem;
+    margin-top: 0.3rem;
+    border: 1px solid black;
+}
+
+.sliding-menu-body .menu_content input[type=checkbox] {
+    display: inline-flex;
+    margin-right: 1.5rem;
+}
+
+/* Labels + inputs : rapprocher texte et champs dans le menu */
+.sliding-menu-body label {
+    display: block;
+    margin: 0.2rem 0 0.15rem;          /* texte juste au-dessus du champ */
+    font-size: 0.9rem;
+}
+
+.sliding-menu-body input[type="number"],
+.sliding-menu-body select {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0.4rem;
+}
+
+/* Réduire un peu la marge des paragraphes explicatifs dans les blocs */
+.sliding-menu-body .menu_content p {
+    margin: 0.6rem 0 0.3rem;
+}
+
+/* Footer collé en bas avec le bouton Reset */
+.sliding-menu-footer {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(15, 18, 40, 0.12);
+
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Bouton Reset toujours en bas, style ghost */
+#reset-kinematics-btn {
+    /* on garde la logique JS, on change juste le look */
+    min-width: 10rem;
+}
+
+/* #endregion */
+
+
+/* #region popups */
+.glass-card {
+    background: rgba(255, 255, 255, 0.50);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-strong);
+    backdrop-filter: blur(var(--popup-card-blur));
+    -webkit-backdrop-filter: blur(var(--popup-card-blur));
+    padding: 2rem;
+    max-width: 32rem;
+    width: 100%;
+    pointer-events: auto;  /* reçoit les clics */
+}
+
+/* Conteneur racine du popup (ce que le JS cache/affiche) */
+.popup-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+/* Couche de fond : sombre + léger blur */
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(var(--popup-backdrop-blur));
+  -webkit-backdrop-filter: blur(var(--popup-backdrop-blur));
+  z-index: 0;
+}
+
+/* Couche au-dessus du fond, sans blur, qui centre la carte */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1;
+  pointer-events: none;  /* pour que seul le contenu (carte) capte les clics */
+}
+
+
+/* Si tu veux que le length-popup soit caché par défaut */
+#length-popup {
+  display: none;
+}
+
+.popup-content {
+  max-width: 30rem;
+  pointer-events: auto;
+}
+
+.popup-content h2 {
+  font-size: clamp(1.9rem, 3vw, 2.4rem);
+  margin: 0.4rem 0 1rem;
+}
+
+.popup-content p {
+  color: var(--color-muted);
+  line-height: 1.7;
+  margin-bottom: 1.6rem;
+}
+
+/* Inputs dans un popup (longueur, sélecteurs, etc.) */
+.popup-content select,
+.popup-content input[type="number"],
+.popup-content input[type="text"] {
+  width: 100%;
+  max-width: 20rem;
+  box-sizing: border-box;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0.75rem;
+}
+
+/* Ligne de boutons dans le popup (btn-primary / btn-ghost) */
+.popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+/* Boutons du popup cinématique : en colonne, pleine largeur */
+#kinematics-popup .popup-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;    /* les enfants prennent toute la largeur dispo */
+  gap: 0.6rem;
+}
+
+#kinematics-popup .popup-actions .btn-primary,
+#kinematics-popup .popup-actions .btn-ghost {
+  width: 100%;
+  justify-content: center; /* texte bien centré dans le bouton */
+}
+/* #endregion */
+
+/* #region boutons */
+.btn-primary,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-accent), #ffe495);
+  color: #1f1400;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: var(--color-text);
+}
+
+.btn-ghost:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
 }
 /* #endregion */
