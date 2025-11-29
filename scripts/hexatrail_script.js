@@ -629,12 +629,9 @@ window.addEventListener('load', () => {
 /* #endregion */
 
 /* #region Run computation */
-    /* #region Getting variables to plot */
+/* #region Getting variables to plot */
 // Get references to inputs
 const runFileInput = document.getElementById('run_file');
-const caliFileInput = document.getElementById('cali_file');
-const pauseInput = document.getElementById('pause');
-const averagingInput = document.getElementById('averaging');
 const runId = document.getElementById('runid');
 const graphicalAn = document.getElementById('graphical');
 const numericalAn = document.getElementById('numerical');
@@ -647,7 +644,6 @@ const ShockTravelInput = document.getElementById('ShockTravel');
 const rearTravelInput = document.getElementById('rearTravel');
 const frontTravelInput = document.getElementById('frontTravel');
 const Speed_hist_limInput = document.getElementById('Speed_hist_lim');
-const pause_tolInput = document.getElementById('pause_tol');
 const regenerateButton = document.getElementById('regenerate-btn');
 
 // Get the current value as a number
@@ -659,7 +655,6 @@ const ShockTravel = Number(ShockTravelInput.value);
 const rearTravel = Number(rearTravelInput.value);
 const frontTravel = Number(frontTravelInput.value);
 const Speed_hist_lim = Number(Speed_hist_limInput.value);
-const pause_tol = Number(pause_tolInput.value);
 
 // Function to parse CSV file
 function parseCSV(file) {
@@ -714,7 +709,12 @@ function parseCSV(file) {
 }
 /* #endregion */
 
-    /* #region computation functions */
+/* #region computation functions */
+// Convertit une valeur en millisecondes en un timestamp ISO Plotly (origine = 1970)
+function msToPlotlyTime(ms) {
+    return new Date(ms).toISOString();
+}
+
 // function to derivate ie. to compute the speed
 function computeDerivative(values, time) {
     const derivatives = [];
@@ -731,136 +731,62 @@ function computeDerivative(values, time) {
     return { derivatives, croppedTime };
 }
 
-// function to average over a window some list
-function averaging(t, X, T = 1, align = 'center') {
-    // Vérifier que T est valide
-    if (T > t[t.length - 1] / 2) {
-        throw new Error('Cannot average over a period this long!');
-    }
+// Format milliseconds as M:SS.cc
+function formatMsToTime(ms) {
+    if (!isFinite(ms) || ms <= 0) return '0:00.00';
 
-    let Tm = [];
-    let AvgAccel = [];
-    
-    const dt = t.length * T / t[t.length - 1];
-    let n = 0;
-    
-    // Appliquer le moyennage glissant
-    while ((n + 1) * T <= t[t.length - 1]) {
-        const a = Math.round(n * dt);
-        const b = Math.round((n + 1) * dt);
-        
-        // Ajuster le temps en fonction de l'alignement
-        if (align === 'left') {
-            Tm.push(n * T);
-        } else if (align === 'right') {
-            Tm.push((n + 1) * T);
-        } else {
-            Tm.push((n + 0.5) * T); // alignement central
-        }
+    const totalSeconds = ms / 1000;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    const centiseconds = Math.round((totalSeconds - minutes * 60 - seconds) * 100);
 
-        // Moyenne de l'accélération dans la fenêtre
-        const segment = X.slice(a, b);
-        const mean = segment.reduce((acc, value) => acc + value, 0) / segment.length;
-        AvgAccel.push(mean);
-
-        n++;
-    }
-
-    // Retourner les valeurs de moyennage
-    return { Tm, AvgAccel };
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
 }
 
-// function do find the index of the closest value in an ordered list
-function findIndex(val, list) {
-    /**
-     * In : list (liste ordonnée), val (valeur numérique)
-     * Out : Indice de la valeur la plus proche de `val` dans `list`
-     */
-    let n = list.length;
-    let i = 0;
-
-    while (val > list[i] && i < n - 1) {
-        i++;
+// Compute total duration and lap durations from Time/Mark arrays
+function computeLapDurations(Time, Mark) {
+    if (!Array.isArray(Time) || Time.length < 2) {
+        return { totalMs: 0, laps: [] };
     }
 
-    if (Math.abs(val - list[i - 1]) < Math.abs(val - list[i])) {
-        return i - 1;
+    const totalMs = Time[Time.length - 1] - Time[0];
+
+    if (!Array.isArray(Mark) || Mark.length !== Time.length) {
+        // Pas de colonne Mark exploitable : on ne sort que la durée totale
+        return { totalMs, laps: [] };
     }
-    return i;
-}
 
-// function do find the inactive time frames
-function detectPauses(tm, Accm, Tmoyennage, tol = 1.6) {
-    /**
-     * In : tm (temps moyennés), Accm (norme moyennée), Tmoyennage (période de moyennage), tol (seuil de détection)
-     * Out : Liste des plages de pauses sous forme [début1, fin1, début2, fin2, ..., débutN, finN]
-     */
-    const Fmoyennage = Tmoyennage * tm.length / tm[tm.length - 1];
-    const pauses = [];
-    let k = -1; // Indice d'entrée dans une plage de pause
-
-    for (let i = 0; i < Accm.length; i++) {
-        if (Math.abs(Accm[i]) < tol && k === -1) {
-            k = i; // Début d'une plage de pause
-        }
-        if (Math.abs(Accm[i]) > tol && k !== -1) {
-            if (i > k + Fmoyennage) {
-                pauses.push(k, i); // Ajouter la plage si elle n'est pas trop courte
-            }
-            k = -1; // Fin de la plage
-        }
-        if (k !== -1 && i === Accm.length - 1) {
-            pauses.push(k, i); // Ajouter la dernière plage si nécessaire
+    const boundaries = [];
+    for (let i = 1; i < Mark.length; i++) {
+        if (Mark[i] === 1 && Mark[i - 1] === 0) {
+            boundaries.push(Time[i]); // front montant = début de nouveau lap
         }
     }
 
-    // Convertir les indices en temps et arrondir à 0.1 près
-    return pauses.map(index => parseFloat(tm[index].toFixed(1)));
-}
-
-// function to cut the inactive time frames
-function cutPauses(pauses, t, X, isTime = false) {
-    /**
-     * In : pauses (plages de pauses), t (liste temps), X (liste des mesures)
-     * Out : Liste Y, version tronquée des pauses de X
-     */
-    t = [...t]; // Travailler sur une copie pour éviter les effets de bord
-    let indices = pauses.map(p => findIndex(p, t));
-    X = [...X]; // Copie de la liste des mesures
-    let Y = [];
-    let n = Math.floor(indices.length / 2);
-    let i = 0;
-
-    for (let k = 0; k < n; k++) {
-        let j = indices[2 * k];
-        Y = Y.concat(X.slice(i, j)); // Ajouter les données hors pause
-        i = indices[2 * k + 1];
+    if (boundaries.length === 0) {
+        // Une seule "lap" = run complète
+        return { totalMs, laps: [totalMs] };
     }
 
-    Y = Y.concat(X.slice(i)); // Ajouter la fin de la liste hors pause
+    const lapStarts = [Time[0], ...boundaries];
+    const lapEnds = [...boundaries, Time[Time.length - 1]];
+    const laps = lapStarts.map((start, idx) => lapEnds[idx] - start);
 
-    // Si on coupe la liste temps, la rendre linéaire
-    if (isTime) {
-        const totalDuration = t[t.length - 1]; // Durée totale du temps d'origine
-        const newTimeStep = totalDuration / (t.length - 1); // Nouveau pas de temps linéaire
-        Y = Array.from({ length: Y.length }, (_, idx) => idx * newTimeStep); // Nouvelle liste temps linéaire
-    }
-
-    return Y;
+    return { totalMs, laps };
 }
 /* #endregion */
 
-    /* #region plot update functions */
+/* #region plot update functions */
 // Function to update the first plot
-async function updateRawPlot(Rear, Front, Time) {
+async function updateRawPlot(Rear, Front, TimePlot) {
     try {
         // Update lineRe and lineFr with new data
-        await Plotly.restyle('plots_container', { x: [Time], y: [Rear] }, [0]);
-        await Plotly.restyle('plots_container', { x: [Time], y: [Front] }, [1]);
+        await Plotly.restyle('plots_container', { x: [TimePlot], y: [Rear] }, [0]);
+        await Plotly.restyle('plots_container', { x: [TimePlot], y: [Front] }, [1]);
 
         // Adjust axes to fit the new data
         await Plotly.relayout('plots_container', {
-            'xaxis.range': [Math.min(...Time), Math.max(...Time)],
+            'xaxis.range': [Math.min(...TimePlot), Math.max(...TimePlot)],
             'yaxis.range': [Math.min(...Rear, ...Front), Math.max(...Rear, ...Front)]
         });
     } catch (error) {
@@ -895,7 +821,7 @@ async function updatePositionPlots(Rear, Front) {
 }
 
 // Function to update the delta plot
-async function updateDeltaPlot(Rear, Front, Time) {
+async function updateDeltaPlot(Rear, Front, TimePlot) {
     // Calculer Delta et arrondir à l'entier le plus proche
     const Delta = Front.map((value, index) => Math.round(value - Rear[index]));
 
@@ -909,9 +835,9 @@ async function updateDeltaPlot(Rear, Front, Time) {
 
     try {
         // plot 5: Courbe Delta
-        await Plotly.restyle('plots_container', { x: [Time], y: [Delta] }, [5]);
+        await Plotly.restyle('plots_container', { x: [TimePlot], y: [Delta] }, [5]);
         await Plotly.relayout('plots_container', {
-            'xaxis4.range': [Math.min(...Time), Math.max(...Time)],
+            'xaxis4.range': [Math.min(...TimePlot), Math.max(...TimePlot)],
             'yaxis4.range': [Math.min(...Delta), Math.max(...Delta)],
         });
 
@@ -990,114 +916,85 @@ async function updateSpeedPlot(Rear, Front, Time) {
     }
 }
 
-// Function to update the acceleration plots
-async function updateAccelPlot(Tm, AvgAccel) {
+// Update the "laps" table in subplot 8
+async function updateLapInfo(Time, Mark) {
     try {
-        await Plotly.restyle('plots_container', { x: [Tm], y: [AvgAccel] }, [10]);
-        await Plotly.relayout('plots_container', {
-            'xaxis8.range': [Math.min(...Tm), Math.max(...Tm)],
-            'yaxis8.range': [0, Math.max(...AvgAccel)]
-        });
+        const { totalMs, laps } = computeLapDurations(Time, Mark);
+
+        if (!totalMs) {
+            await Plotly.restyle('plots_container', {
+                'header.values': [[]],
+                'cells.values': [[]]
+            }, [10]);
+            return;
+        }
+
+        const labels = ['Total', ...laps.map((_, idx) => `Lap ${idx + 1}`)];
+        const durations = [formatMsToTime(totalMs), ...laps.map(lap => formatMsToTime(lap))];
+
+        const headerValues = ['<b>Segment</b>', '<b>Durée</b>'];
+        const cellsValues = [labels, durations];
+
+        const nRows = labels.length;
+        const rowColors = [];
+        for (let i = 0; i < nRows; i++) {
+            rowColors.push(i % 2 === 0 ? 'rgba(255,255,255,1)' : 'rgba(240,240,240,1)');
+        }
+        const fillColor = [rowColors, rowColors]; // une couleur par ligne, pour les 2 colonnes
+
+        await Plotly.restyle('plots_container', {
+            'header.values': [headerValues],
+            'cells.values': [cellsValues],
+            'cells.fill.color': [fillColor]
+        }, [10]); // trace index 10 = table des laps
     } catch (error) {
-        console.error('Error updating second plot:', error);
+        console.error('Error updating lap info:', error);
     }
 }
 
 // Function to update all the plots
 async function updateSubplot() {
-    if (runFileInput.files.length === 0 || caliFileInput.files.length === 0) {
-        console.error('Both files need to be selected.');
+    if (runFileInput.files.length === 0) {
+        console.error('Run file needs to be selected.');
         return;
     }
 
     try {
         const run = runFileInput.files[0];
-        const cali = caliFileInput.files[0];
+        const parsed_run = await parseCSV(run);
 
-        // Parse both files
-        const [parsed_run, parsed_cali] = await Promise.all([
-            parseCSV(run),
-            parseCSV(cali)
-        ]);
-
-        const Time = parsed_run.dataObject['Time (ms)'];
-        const Pot1 = parsed_run.dataObject['Potentiometer 0 (mm)'];
-        const Pot2 = parsed_run.dataObject['Potentiometer 1 (mm)'];
-        const accelerationX = parsed_run.dataObject['Acceleration X (m/s^2)'];
-        const accelerationY = parsed_run.dataObject['Acceleration Y (m/s^2)'];
-        const accelerationZ = parsed_run.dataObject['Acceleration Z (m/s^2)'];
-
-        const CaliPot1 = parsed_cali.dataObject['Potentiometer 0 (mm)'];
-        const CaliPot2 = parsed_cali.dataObject['Potentiometer 1 (mm)'];
-
-        // calculs
-        const Ar = Pot1.map(value => (rearPotVal - value)*rearPotLen/rearPotVal);
-        const Av = Pot2.map(value => (frontPotVal - value)*frontPotLen/frontPotVal);
-        const zero_Ar = Math.min(...Ar);
-        const zero_Av = Math.min(...Av);
-        const Front = Av.map(value => (value - zero_Av));
-        const rearPotActTravel = (Math.max(...CaliPot1) - Math.min(...CaliPot1))*rearPotLen/rearPotVal
-        const Rear = Ar.map(value => (value - zero_Ar)*rearTravel/rearPotActTravel);
-
-        const accelNorm = accelerationX.map((value, index) => Math.sqrt(Math.pow(value, 2) + Math.pow(accelerationY[index], 2) + Math.pow(accelerationZ[index], 2)) - 10);
-        const Tmoyennage = parseFloat(document.getElementById('averaging').value);
-        const { Tm, AvgAccel } = averaging(Time, accelNorm, Tmoyennage, 'center');
+        // Nouveau format CSV
+        const Time = parsed_run.dataObject['Time_ms'];
+        // Convertir les ms en timestamps ISO pour Plotly
+        const TimePlot = Time.map(t => msToPlotlyTime(t));
+        const Pot1 = parsed_run.dataObject['PotA0'];
+        const Pot2 = parsed_run.dataObject['PotA1'];
+        const Mark = parsed_run.dataObject['Mark'];
 
         if (!Time || !Pot1 || !Pot2) {
-            console.error('Data extraction failed. Check CSV headers.');
+            console.error('Data extraction failed. Expected headers: Time_ms, PotA0, PotA1.');
             return;
         }
 
-        // If the pauses should be cut
-        if (pauseInput.checked) {
-            console.log('Suppression des pauses activée.');
+        const Front = Pot1.map(v => (v / frontPotVal) * frontPotLen);
+        const Rear = Pot2.map(v => (v / rearPotVal) * rearPotLen);
 
-            const pauses = detectPauses(Tm, AvgAccel, Tmoyennage, pause_tol);
-            console.log('Pauses détectées :', pauses);
-
-            // Supprimer les pauses des données
-            const RearFiltered = cutPauses(pauses, Time, Rear);
-            const FrontFiltered = cutPauses(pauses, Time, Front);
-            const TimeFiltered = cutPauses(pauses, Time, Time, true); // Nouvelle liste temps linéaire
-            const AvgAccelFiltered = cutPauses(pauses, Tm, AvgAccel); // Couper aussi AvgAccel et Tm
-            const TmFiltered = cutPauses(pauses, Tm, Tm, true);
-
-            // Remplacer les listes originales par les versions filtrées
-            Rear.length = 0;
-            Rear.push(...RearFiltered);
-
-            Front.length = 0;
-            Front.push(...FrontFiltered);
-
-            Time.length = 0;
-            Time.push(...TimeFiltered);
-
-            AvgAccel.length = 0;
-            AvgAccel.push(...AvgAccelFiltered);
-
-            Tm.length = 0;
-            Tm.push(...TmFiltered);
-
-            console.log('Données après suppression des pauses :', { Rear, Front, Time, AvgAccel, Tm });
-        }
-
-        // Update plot functions
-        await updateRawPlot(Rear, Front, Time);
+        await updateRawPlot(Rear, Front, TimePlot);
         await updatePositionPlots(Rear, Front);
-        await updateDeltaPlot(Rear, Front, Time);
+        await updateDeltaPlot(Rear, Front, TimePlot);
         await updateSpeedPlot(Rear, Front, Time);
-        await updateAccelPlot(Tm, AvgAccel);
+
+        // Graph 8 : table de laps
+        await updateLapInfo(Time, Mark);
 
         console.log('Plots updated successfully.');
     } catch (error) {
         console.error('Error updating plot:', error);
     }
 }
-/* #endregion */
 
 // Add event listeners to both file inputs -> update plots
 runFileInput.addEventListener('change', updateSubplot);
-caliFileInput.addEventListener('change', updateSubplot);
 regenerateButton.addEventListener('click', async () => {
     try {
         console.log('Regeneration initiated.');
@@ -1110,8 +1007,9 @@ regenerateButton.addEventListener('click', async () => {
         console.error('Error regenerating graphs:', error);
     }
 });
+/* #endregion */
 
-    /* #region plotly variables */
+/* #region plotly variables */
 /*
 Colors :
 Front : rgba(0, 152, 241, 0.7) (bleu clair)
@@ -1246,25 +1144,35 @@ var histogramDelta = {
     name: 'Fr/Re delta',
     };
 
-var lineAccel = {
-    x: [1, 2, 3],
-    y: [4, 5, 6],
-    xaxis: 'x8',
-    yaxis: 'y8',
-    type: 'scatter',
-    name: "Acceleration",
-    marker: {color: 'rgb(10, 89, 160)'}, //{color: 'rgba(195, 177, 225, 0.7)'}
-    line : {
-        width: 1,
+var lapsTable = {
+    type: 'table',
+    domain: { x: [0.50, 1], y: [0, 0.30] },
+    columnwidth: [0.5, 0.5],
+    header: {
+        values: ['<b>Segment</b>', '<b>Durée</b>'],
+        align: 'left',
+        fill: { color: 'rgba(230,230,230,1)' },
+        font: { size: 12 }
+    },
+    cells: {
+        values: [['Total'], ['0:00.00']],
+        align: 'left',
+        fill: { color: [['rgba(255,255,255,1)'], ['rgba(255,255,255,1)']] },
+        font: { size: 11 }
     }
-    };
+};
 
-var data = [lineRe, lineFr, histogramRe, histogramFr, cloudPosition, lineDelta, histogramReSpeed, histogramFrSpeed, cloudSpeed, histogramDelta, lineAccel];
+var data = [lineRe, lineFr, histogramRe, histogramFr, cloudPosition, lineDelta, histogramReSpeed, histogramFrSpeed, cloudSpeed, histogramDelta, lapsTable];
 
 var layout = {
     grid: {rows: 3, columns: 4, pattern: 'independent'},
 
-    xaxis: { domain: [0, 0.46], anchor: 'x1'},  // Spans the first two columns
+    xaxis: { 
+        domain: [0, 0.46],
+        anchor: 'x1',
+        type: 'date',
+        tickformat: '%M:%S',
+    },
     yaxis: { domain: [0.70, 1], anchor: 'y1'},   // First row
 
     xaxis2: { domain: [0.50, 0.73], anchor: 'x2'}, // Third column
@@ -1273,7 +1181,12 @@ var layout = {
     xaxis3: { domain: [0.77, 1], anchor: 'x3'}, // Second row, first column
     yaxis3: { domain: [0.70, 1], anchor: 'y3'},
 
-    xaxis4: { domain: [0, 0.46], anchor: 'x4'}, // Second row, second column
+    xaxis4: { 
+        domain: [0, 0.46],
+        anchor: 'x4',
+        type: 'date',
+        tickformat: '%M:%S'
+    },
     yaxis4: { domain: [0.35, 0.65], anchor: 'y4'},
 
     xaxis5: { domain: [0.50, 0.73], anchor: 'x5'},
@@ -1285,8 +1198,8 @@ var layout = {
     xaxis7: { domain: [0, 0.46], anchor: 'x7'}, // Second row, third column
     yaxis7: { domain: [0, 0.30], anchor: 'y7'},
 
-    xaxis8: { domain: [0.50, 1], anchor: 'x8'}, // Second row, third column
-    yaxis8: { domain: [0, 0.30], anchor: 'y8'},
+    xaxis8: { domain: [0.50, 1], anchor: 'x8', visible: false }, // Laps table zone (hidden axis)
+    yaxis8: { domain: [0, 0.30], anchor: 'y8', visible: false },
     
     margin: { t: 20, b: 20, l: 20, r: 20 },
 
@@ -1320,8 +1233,8 @@ var config = {
     displaylogo: false,
     doubleClickDelay: 1000,
 }
-/* #endregion */
 
 Plotly.newPlot('plots_container', data, layout);
+/* #endregion */
 
 /* #endregion */
