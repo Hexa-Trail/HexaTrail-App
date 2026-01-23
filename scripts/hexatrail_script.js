@@ -722,7 +722,10 @@ function parseCSV(file) {
                 const lines = csvText.split('\n').filter(line => line.trim() !== '');
 
                 // Split the first line by the separator to get headers
-                const headers = lines[0].split(separator).map(h => h.trim());
+                const headers = lines[0]
+                    .split(separator)
+                    .map(h => h.replace(/\r/g, '').trim());
+
 
                 // Parse data rows
                 const data = lines.slice(1).map(line => {
@@ -739,6 +742,7 @@ function parseCSV(file) {
                 const dataObject = {};
                 headers.forEach((header, index) => {
                     dataObject[header] = data.map(row => row[index]);
+                    // console.log('[parseCSV] headers:', headers);
                 });
 
                 resolve({
@@ -915,7 +919,7 @@ async function updatePositionPlots(Rear, Front) {
 }
 
 // Function to update the delta plot
-async function updateDeltaPlot(Rear, Front, TimePlot) {
+async function updateDeltaPlot(Rear, Front, Time) {
     // Calculer Delta et arrondir à l'entier le plus proche
     const Delta = Front.map((value, index) => Math.round(value - Rear[index]));
 
@@ -1061,25 +1065,50 @@ async function updateSubplot() {
         const run = runFileInput.files[0];
         const parsed_run = await parseCSV(run);
 
-        // Nouveau format CSV
-        const Time = parsed_run.dataObject['Time_ms'];
-        // Convertir les ms en timestamps ISO pour Plotly
-        const TimePlot = Time.map(t => msToPlotlyTime(t));
-        const Pot1 = parsed_run.dataObject['PotA0'];
-        const Pot2 = parsed_run.dataObject['PotA1'];
-        const Mark = parsed_run.dataObject['Mark'];
+        // Nouveau format CSV (robuste aux \r et variations)
+        const getCol = (name) => {
+            if (parsed_run.dataObject[name]) return parsed_run.dataObject[name];
+            // fallback si le header a un \r (normalement corrigé dans parseCSV, mais on garde une sécurité)
+            const key = Object.keys(parsed_run.dataObject).find(k => k.replace(/\r/g, '').trim() === name);
+            return key ? parsed_run.dataObject[key] : undefined;
+        };
 
-        if (!Time || !Pot1 || !Pot2) {
+        const TimeRaw = getCol('Time_ms');
+        const Pot1Raw = getCol('PotA0');
+        const Pot2Raw = getCol('PotA1');
+        const MarkRaw = getCol('Mark');
+
+        // Debug : vérifie extraction brute
+        console.log('[updateSubplot] Columns present:', Object.keys(parsed_run.dataObject));
+        console.log('[updateSubplot] TimeRaw:', TimeRaw?.slice(0, 10), 'len=', TimeRaw?.length);
+        console.log('[updateSubplot] Pot1Raw:', Pot1Raw?.slice(0, 10), 'len=', Pot1Raw?.length);
+        console.log('[updateSubplot] Pot2Raw:', Pot2Raw?.slice(0, 10), 'len=', Pot2Raw?.length);
+        console.log('[updateSubplot] MarkRaw:', MarkRaw?.slice(0, 20), 'len=', MarkRaw?.length);
+
+        if (!TimeRaw || !Pot1Raw || !Pot2Raw) {
             console.error('Data extraction failed. Expected headers: Time_ms, PotA0, PotA1.');
             return;
         }
 
+        // Conversion explicite en nombres (important si parseCSV a laissé des strings)
+        const Time = TimeRaw.map(v => Number(v));
+        const Pot1 = Pot1Raw.map(v => Number(v));
+        const Pot2 = Pot2Raw.map(v => Number(v));
+        const Mark = MarkRaw ? MarkRaw.map(v => Number(v)) : null;
+
+        // Debug : vérifie conversion numérique + NaN
+        const countNaN = (arr) => arr.reduce((acc, v) => acc + (Number.isFinite(v) ? 0 : 1), 0);
+        console.log('[updateSubplot] Time (num) head:', Time.slice(0, 10), 'NaN=', countNaN(Time));
+        console.log('[updateSubplot] Pot1 (num) head:', Pot1.slice(0, 10), 'NaN=', countNaN(Pot1));
+        console.log('[updateSubplot] Pot2 (num) head:', Pot2.slice(0, 10), 'NaN=', countNaN(Pot2));
+        if (Mark) console.log('[updateSubplot] Mark (num) head:', Mark.slice(0, 20), 'NaN=', countNaN(Mark));
+
         const Front = Pot1.map(v => (v / frontPotVal) * frontPotLen);
         const Rear = Pot2.map(v => (v / rearPotVal) * rearPotLen);
 
-        await updateRawPlot(Rear, Front, TimePlot);
+        await updateRawPlot(Rear, Front, Time);
         await updatePositionPlots(Rear, Front);
-        await updateDeltaPlot(Rear, Front, TimePlot);
+        await updateDeltaPlot(Rear, Front, Time);
         await updateSpeedPlot(Rear, Front, Time);
 
         // Graph 8 : table de laps
