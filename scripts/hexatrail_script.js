@@ -337,10 +337,22 @@ function showReferenceLengthPopup() {
 /* #endregion */
 
     /* #region menu & sidebar */
+const menu = document.getElementById("menu");
+
 document.getElementById("settings_icon").addEventListener("click", () => {
-    const menu = document.getElementById("menu");
-    menu.classList.toggle("open");
+    if (menu) {
+        menu.classList.toggle("open");
+    }
 });
+
+// Fermer le menu si on clique en dehors du panel (sur le fond)
+if (menu) {
+    menu.addEventListener("click", (event) => {
+        if (event.target === menu) {
+            menu.classList.remove("open");
+        }
+    });
+}
 
 // reset kinematics in menu
 document.getElementById("reset-kinematics-btn").addEventListener("click", () => {
@@ -647,14 +659,51 @@ const Speed_hist_limInput = document.getElementById('Speed_hist_lim');
 const regenerateButton = document.getElementById('regenerate-btn');
 
 // Get the current value as a number
-const rearPotVal = Number(rearPotValInput.value);
-const frontPotVal = Number(frontPotValInput.value);
-const rearPotLen = Number(rearPotInput.value);
-const frontPotLen = Number(frontPotInput.value);
-const ShockTravel = Number(ShockTravelInput.value);
-const rearTravel = Number(rearTravelInput.value);
-const frontTravel = Number(frontTravelInput.value);
-const Speed_hist_lim = Number(Speed_hist_limInput.value);
+let rearPotVal = Number(rearPotValInput.value);
+let frontPotVal = Number(frontPotValInput.value);
+let rearPotLen = Number(rearPotInput.value);
+let frontPotLen = Number(frontPotInput.value);
+let ShockTravel = Number(ShockTravelInput.value);
+let rearTravel = Number(rearTravelInput.value);
+let frontTravel = Number(frontTravelInput.value);
+let Speed_hist_lim = Number(Speed_hist_limInput.value);
+
+// Mise à jour avec "appliquer"
+function applyAnalysisSettings() {
+    rearPotVal   = Number(rearPotValInput.value) || 2047;
+    frontPotVal  = Number(frontPotValInput.value) || 2047;
+    rearPotLen   = Number(rearPotInput.value) || 100;
+    frontPotLen  = Number(frontPotInput.value) || 150;
+    ShockTravel  = Number(ShockTravelInput.value) || 47;
+    rearTravel   = Number(rearTravelInput.value) || 130;
+    frontTravel  = Number(frontTravelInput.value) || 130;
+    Speed_hist_lim = Number(Speed_hist_limInput.value) || 2000;
+
+    console.log('New analysis settings applied:', {
+        rearPotVal,
+        frontPotVal,
+        rearPotLen,
+        frontPotLen,
+        ShockTravel,
+        rearTravel,
+        frontTravel,
+        Speed_hist_lim
+    });
+}
+
+const applySettingsButton = document.getElementById('apply-settings-btn');
+if (applySettingsButton) {
+    applySettingsButton.addEventListener('click', async () => {
+        applyAnalysisSettings();
+        // Relance le calcul avec les nouvelles valeurs
+        await updateSubplot();
+        // Ferme le menu une fois appliqué
+        const menu = document.getElementById('menu');
+        if (menu) {
+            menu.classList.remove('open');
+        }
+    });
+}
 
 // Function to parse CSV file
 function parseCSV(file) {
@@ -774,20 +823,65 @@ function computeLapDurations(Time, Mark) {
 
     return { totalMs, laps };
 }
+
+// Construit des ticks mm:ss pour un axe temporel linéaire (Time en ms)
+function buildTimeTicks(Time) {
+    if (!Array.isArray(Time) || Time.length < 2) {
+        return { tickvals: [], ticktext: [] };
+    }
+
+    const t0 = Time[0];
+    const tEnd = Time[Time.length - 1];
+    const totalMs = tEnd - t0;
+    const totalSec = totalMs / 1000;
+
+    if (!isFinite(totalSec) || totalSec <= 0) {
+        return { tickvals: [], ticktext: [] };
+    }
+
+    // On choisit un pas de tick pour avoir ~10 graduations max
+    const candidates = [5, 10, 15, 30, 60, 120, 300];
+    let dt = candidates[candidates.length - 1];
+    for (const c of candidates) {
+        if (totalSec / c <= 10) {
+            dt = c;
+            break;
+        }
+    }
+
+    const tickvals = [];
+    const ticktext = [];
+
+    for (let sec = 0; sec <= totalSec + 1e-6; sec += dt) {
+        const tickTime = t0 + sec * 1000; // Time est en ms
+        tickvals.push(tickTime);
+
+        const minutes = Math.floor(sec / 60);
+        const seconds = Math.floor(sec % 60);
+        ticktext.push(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    }
+
+    return { tickvals, ticktext };
+}
 /* #endregion */
 
 /* #region plot update functions */
 // Function to update the first plot
-async function updateRawPlot(Rear, Front, TimePlot) {
+async function updateRawPlot(Rear, Front, Time) {
     try {
-        // Update lineRe and lineFr with new data
-        await Plotly.restyle('plots_container', { x: [TimePlot], y: [Rear] }, [0]);
-        await Plotly.restyle('plots_container', { x: [TimePlot], y: [Front] }, [1]);
+        // Met à jour les données
+        await Plotly.restyle('plots_container', { x: [Time], y: [Rear] }, [0]);
+        await Plotly.restyle('plots_container', { x: [Time], y: [Front] }, [1]);
 
-        // Adjust axes to fit the new data
+        const { tickvals, ticktext } = buildTimeTicks(Time);
+
+        // Ajuste l'axe et applique les ticks mm:ss
         await Plotly.relayout('plots_container', {
-            'xaxis.range': [Math.min(...TimePlot), Math.max(...TimePlot)],
-            'yaxis.range': [Math.min(...Rear, ...Front), Math.max(...Rear, ...Front)]
+            'xaxis.range': [Math.min(...Time), Math.max(...Time)],
+            'yaxis.range': [Math.min(...Rear, ...Front), Math.max(...Rear, ...Front)],
+            'xaxis.tickmode': 'array',
+            'xaxis.tickvals': tickvals,
+            'xaxis.ticktext': ticktext
         });
     } catch (error) {
         console.error('Error updating the raw plot:', error);
@@ -835,10 +929,14 @@ async function updateDeltaPlot(Rear, Front, TimePlot) {
 
     try {
         // plot 5: Courbe Delta
-        await Plotly.restyle('plots_container', { x: [TimePlot], y: [Delta] }, [5]);
+        const { tickvals, ticktext } = buildTimeTicks(Time);
+        await Plotly.restyle('plots_container', { x: [Time], y: [Delta] }, [5]);
         await Plotly.relayout('plots_container', {
-            'xaxis4.range': [Math.min(...TimePlot), Math.max(...TimePlot)],
+            'xaxis4.range': [Math.min(...Time), Math.max(...Time)],
             'yaxis4.range': [Math.min(...Delta), Math.max(...Delta)],
+            'xaxis4.tickmode': 'array',
+            'xaxis4.tickvals': tickvals,
+            'xaxis4.ticktext': ticktext
         });
 
         // plot 9: Histogramme aligné sur les entiers
@@ -1167,12 +1265,7 @@ var data = [lineRe, lineFr, histogramRe, histogramFr, cloudPosition, lineDelta, 
 var layout = {
     grid: {rows: 3, columns: 4, pattern: 'independent'},
 
-    xaxis: { 
-        domain: [0, 0.46],
-        anchor: 'x1',
-        type: 'date',
-        tickformat: '%M:%S',
-    },
+    xaxis: { domain: [0, 0.46], anchor: 'x1'},  // Spans the first two columns
     yaxis: { domain: [0.70, 1], anchor: 'y1'},   // First row
 
     xaxis2: { domain: [0.50, 0.73], anchor: 'x2'}, // Third column
@@ -1181,12 +1274,7 @@ var layout = {
     xaxis3: { domain: [0.77, 1], anchor: 'x3'}, // Second row, first column
     yaxis3: { domain: [0.70, 1], anchor: 'y3'},
 
-    xaxis4: { 
-        domain: [0, 0.46],
-        anchor: 'x4',
-        type: 'date',
-        tickformat: '%M:%S'
-    },
+    xaxis4: { domain: [0, 0.46], anchor: 'x4'},
     yaxis4: { domain: [0.35, 0.65], anchor: 'y4'},
 
     xaxis5: { domain: [0.50, 0.73], anchor: 'x5'},
