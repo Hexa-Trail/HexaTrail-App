@@ -1,0 +1,13 @@
+pivot label,x,y
+"Front travel (mm)",130.000,
+"Rear travel (mm)",130.000,
+"Shock stroke (mm)",47.000,
+"Rear axle",-442.643,38.491
+"Front axle",737.245,22.206
+"Crank axle",0.000,0.000
+"Chainstay/Frame pivot",-32.569,76.981
+"Chainstay/Seatstay pivot",-398.231,11.843
+"Seatstay/Rocker pivot",-85.864,275.356
+"Rocker/Frame pivot",1.480,250.189
+"Rocker/Shock eye",68.099,251.670
+"Frame/Shock eye",-31.089,74.021
