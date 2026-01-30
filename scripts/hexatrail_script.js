@@ -14,6 +14,17 @@ const tabContents = document.querySelectorAll(".tab-content");
 // Nouvelles variables pour la conversion pixels → millimètres
 let pxToMmRatio = 1.0;      // Ratio px/mm
 let pivotPointsMm = [];     // Coordonnées converties en mm
+
+// --- Leverage curve globals ---
+let geometryMeta = {
+  frontTravel: 0,
+  rearTravel: 0,
+  shockStroke: 0
+};
+
+let leverageCurve = null; 
+// leverageCurve = { shock: [], wheel: [], ratio: [], shockToWheel: (s)=>... }
+
 /* #endregion */
 
     /* #region Fonctions calcul pivot */
@@ -60,9 +71,410 @@ function convertPivotsToMm() {
     console.log("Converted MM Coordinates (Origin = Crank):", pivotPointsMm);
     alert("Geometry successfully captured and converted to millimeters!");
 
-    // C’est ici que tu brancheras ton moteur cinématique plus tard
+    // C’est ici qu'on branche le moteur cinématique
+    try {
+        // Meta depuis les inputs si dispo
+        const frontTravelInput = document.getElementById("frontTravel");
+        const rearTravelInput  = document.getElementById("rearTravel");
+        const shockTravelInput = document.getElementById("ShockTravel");
+
+        geometryMeta.frontTravel = Number(frontTravelInput?.value || 0);
+        geometryMeta.rearTravel  = Number(rearTravelInput?.value || 0);
+        geometryMeta.shockStroke = Number(shockTravelInput?.value || 0);
+
+        const pivotType = document.querySelector('select[name="pivottype"]').value;
+        leverageCurve = computeLeverageCurve(pivotType, pivotPointsMm, geometryMeta);
+
+        console.log("[Leverage] computed from pointed geometry:", leverageCurve);
+    } catch (e) {
+        console.warn("Leverage curve could not be computed:", e);
+    }
+
 }
 /* #endregion */
+
+    /* #region Kinematics simulation */
+/* ============================
+   Leverage curve computation
+   ============================ */
+
+// Helpers
+function getPivot(pivotsMm, label) {
+  const p = pivotsMm.find(x => x.label === label);
+  if (!p) throw new Error(`Missing pivot "${label}"`);
+  return { x: Number(p.x), y: Number(p.y) };
+}
+
+function dist(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
+
+// Après avoir construit une liste de positions roue : wheelPos = [{x,y}, ...]
+function cumulativeArcFromPositions(pos) {
+  const arc = new Array(pos.length).fill(0);
+  let cum = 0;
+  for (let i = 1; i < pos.length; i++) {
+    const dx = pos[i].x - pos[i - 1].x;
+    const dy = pos[i].y - pos[i - 1].y;
+    cum += Math.hypot(dx, dy);
+    arc[i] = cum;
+  }
+  return arc;
+}
+
+/**
+ * Intersection de deux cercles
+ * c0, c1 : centres {x,y}
+ * r0, r1 : rayons
+ * Retourne 0, 1 ou 2 solutions (tableau de points)
+ */
+function circleCircleIntersection(c0, r0, c1, r1) {
+  const d = dist(c0, c1);
+  // Pas d'intersection
+  if (d > r0 + r1) return [];
+  if (d < Math.abs(r0 - r1)) return [];
+  if (d === 0 && r0 === r1) return []; // cercles confondus -> infinité de solutions (on refuse)
+
+  const a = (r0*r0 - r1*r1 + d*d) / (2*d);
+  const h2 = r0*r0 - a*a;
+  const h = h2 <= 0 ? 0 : Math.sqrt(h2);
+
+  // Point p2 = point sur la ligne c0->c1
+  const x2 = c0.x + a * (c1.x - c0.x) / d;
+  const y2 = c0.y + a * (c1.y - c0.y) / d;
+
+  // Offsets perpendiculaires
+  const rx = -(c1.y - c0.y) * (h / d);
+  const ry =  (c1.x - c0.x) * (h / d);
+
+  const pA = { x: x2 + rx, y: y2 + ry };
+  const pB = { x: x2 - rx, y: y2 - ry };
+
+  // Si h=0, une seule solution
+  if (h === 0) return [pA];
+  return [pA, pB];
+}
+
+/**
+ * Interpolation linéaire (x croissant)
+ */
+function lerp1D(xs, ys, x) {
+  if (!xs || xs.length < 2) return NaN;
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[xs.length - 1]) return ys[ys.length - 1];
+
+  // recherche linéaire simple (OK pour 200-500 pts)
+  for (let i = 0; i < xs.length - 1; i++) {
+    const x0 = xs[i], x1 = xs[i + 1];
+    if (x >= x0 && x <= x1) {
+      const t = (x - x0) / (x1 - x0 || 1e-12);
+      return ys[i] + t * (ys[i + 1] - ys[i]);
+    }
+  }
+  return ys[ys.length - 1];
+}
+
+/**
+ * Construit un convertisseur shock(mm) -> wheel(mm) via la curve globale
+ */
+function buildShockToWheel(curve) {
+  return function shockToWheel(shockMm) {
+    if (!curve || !curve.shock || !curve.wheel) return shockMm;
+    return lerp1D(curve.shock, curve.wheel, shockMm);
+  };
+}
+
+/**
+ * Dérivée discrète ratio = dWheel/dShock
+ */
+function finiteDiffRatio(shockArr, wheelArr) {
+  const ratio = new Array(shockArr.length).fill(NaN);
+  for (let i = 1; i < shockArr.length; i++) {
+    const ds = shockArr[i] - shockArr[i - 1];
+    const dw = wheelArr[i] - wheelArr[i - 1];
+    ratio[i] = (Math.abs(ds) < 1e-9) ? ratio[i - 1] : (dw / ds);
+  }
+  // ratio[0] = ratio[1] si possible
+  if (shockArr.length > 1) ratio[0] = ratio[1];
+  return ratio;
+}
+
+/**
+ * Parse ton CSV géométrie exporté :
+ * - lignes de méta : "Rear travel (mm)", "Shock stroke (mm)" etc.
+ * - lignes pivots : label, x, y
+ */
+function parseGeometryCSVText(csvText) {
+  const lines = csvText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length < 2) throw new Error("Geometry CSV: empty or too short.");
+
+  // détecter séparateur depuis header
+  const sep = lines[0].includes(",") ? "," : (lines[0].includes(";") ? ";" : "\t");
+
+  const meta = { frontTravel: 0, rearTravel: 0, shockStroke: 0 };
+  const pivots = [];
+
+  // skip header pivot label,x,y
+  for (let i = 1; i < lines.length; i++) {
+    const raw = lines[i];
+
+    // split en gérant éventuellement des quotes basiques
+    const parts = raw.split(sep).map(s => s.replace(/\r/g, "").trim());
+    if (parts.length < 2) continue;
+
+    // label peut être "xxx"
+    const label = parts[0].replace(/^"(.*)"$/, "$1");
+
+    // Meta lignes : "Rear travel (mm)", value
+    if (label === "Front travel (mm)" || label === "Rear travel (mm)" || label === "Shock stroke (mm)") {
+      const v = Number((parts[1] ?? "").replace(",", "."));
+      if (label === "Front travel (mm)") meta.frontTravel = v;
+      if (label === "Rear travel (mm)")  meta.rearTravel  = v;
+      if (label === "Shock stroke (mm)") meta.shockStroke = v;
+      continue;
+    }
+
+    // Pivot lignes : label, x, y
+    if (parts.length >= 3) {
+      const x = Number((parts[1] ?? "").replace(",", "."));
+      const y = Number((parts[2] ?? "").replace(",", "."));
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        pivots.push({ label, x, y });
+      }
+    }
+  }
+
+  return { meta, pivots };
+}
+
+/**
+ * Calcule la leverage curve pour des types supportés
+ * pivotType : valeur du select (monopivot, horstlink4, etc.)
+ */
+function computeLeverageCurve(pivotType, pivotsMm, meta, steps = 361) {
+  if (!pivotsMm || pivotsMm.length === 0) throw new Error("No pivots in mm.");
+
+  // === MONOPIVOT ===
+  if (pivotType === "Monopivot") {
+    // pivots requis
+    const A = getPivot(pivotsMm, "Frame/rear triangle pivot");         // pivot principal
+    const R = getPivot(pivotsMm, "Rear axle");                          // axe roue
+    const SF = getPivot(pivotsMm, "Frame/shock eye");                   // shock eye frame
+    const SR0 = getPivot(pivotsMm, "Rear triangle/shock eye");          // shock eye rear triangle (sur bras)
+
+    const L_AR = dist(A, R);
+    const L_ASR = dist(A, SR0);
+    const L0 = dist(SF, SR0);
+
+    // angle initial
+    const theta0 = Math.atan2(R.y - A.y, R.x - A.x);
+
+    const shock = [];
+    const wheel = [];
+
+    // On fait varier theta autour de theta0 (petite plage puis on recale)
+    const span = Math.PI / 2; // 90° max (large) -> on garde seulement la partie utile ensuite
+    for (let i = 0; i < steps; i++) {
+      const t = -span * 0.2 + (span * 0.8) * (i / (steps - 1)); // biais vers compression (à ajuster si besoin)
+      const theta = theta0 + t;
+
+      const Rpos = { x: A.x + L_AR * Math.cos(theta), y: A.y + L_AR * Math.sin(theta) };
+      const SRpos = { x: A.x + L_ASR * Math.cos(theta), y: A.y + L_ASR * Math.sin(theta) };
+
+      const L = dist(SF, SRpos);
+      const stroke = L0 - L; // >0 en compression
+      shock.push(stroke);
+      wheel.push(Rpos.y - R.y); // déplacement vertical relatif (0 au sag initial)
+    }
+
+    // On garde seulement stroke croissant (filtre + tri)
+    const pairs = shock.map((s, i) => ({ s, w: wheel[i] }))
+      .filter(p => Number.isFinite(p.s) && Number.isFinite(p.w));
+
+    pairs.sort((a, b) => a.s - b.s);
+
+    // On recale le stroke pour que min(stroke)=0
+    if (pairs.length < 5) throw new Error("Not enough valid kinematic samples.");
+
+    let shockArr = pairs.map(p => p.s);
+    let wheelArr = pairs.map(p => p.w);
+
+    // Rebase shock to start at 0 (avoid losing everything when stroke is negative)
+    const sMin = Math.min(...shockArr);
+    shockArr = shockArr.map(s => s - sMin);
+
+    // Si on a une course amorto connue, on clamp dans [0, shockStroke]
+    if (meta?.shockStroke > 0) {
+        const ss = meta.shockStroke;
+        const zipped = shockArr.map((s, i) => ({ s, w: wheelArr[i] }))
+            .filter(p => p.s >= 0 && p.s <= ss);
+        shockArr = zipped.map(p => p.s);
+        wheelArr = zipped.map(p => p.w);
+    }
+
+    // S'il n'y a plus rien après clamp, on garde tout
+    if (shockArr.length < 5) {
+        shockArr = pairs.map(p => p.s - sMin);
+        wheelArr = pairs.map(p => p.w);
+    }
+
+    // wheel doit être positive en compression -> si inversé, on flip
+    if (wheelArr.length > 2 && wheelArr[wheelArr.length - 1] < 0) wheelArr = wheelArr.map(v => -v);
+
+    if (meta?.rearTravel > 0 && wheelArr.length > 2) {
+      const wMax = wheelArr[wheelArr.length - 1];
+      if (Math.abs(wMax) > 1e-6) {
+        const scale = meta.rearTravel / wMax;
+        wheelArr = wheelArr.map(v => v * scale);
+      }
+    }
+
+    const ratio = finiteDiffRatio(shockArr, wheelArr);
+    const curve = { shock: shockArr, wheel: wheelArr, ratio };
+    curve.shockToWheel = buildShockToWheel(curve);
+
+    console.log("[Leverage] samples kept:", shockArr.length,
+            "shock range:", shockArr[0], "->", shockArr[shockArr.length - 1],
+            "wheel range:", wheelArr[0], "->", wheelArr[wheelArr.length - 1]);
+
+    return curve;
+  }
+
+  // === HORST LINK 4-BAR (Wheelstay/Frame + Wheelstay/Seatstay + Seatstay/Rocker + Rocker/Frame) ===
+  // Hypothèse : rocker = barre rigide entre (Rocker/Frame pivot) et (Seatstay/Rocker pivot)
+  // Shock entre (Frame/Shock eye) et (Rocker/Shock eye)
+  if (pivotType === "HorstLink4") {
+    const O = getPivot(pivotsMm, "Wheelstay/Frame pivot");     // pivot chainstay/frame
+    const H = getPivot(pivotsMm, "Wheelstay/Seatstay pivot");  // pivot Horst (chainstay/seatstay)
+    const R0 = getPivot(pivotsMm, "Rear axle");                // axe roue
+    const RF = getPivot(pivotsMm, "Rocker/Frame pivot");       // pivot rocker/frame
+    const RS = getPivot(pivotsMm, "Seatstay/Rocker pivot");    // pivot seatstay/rocker (point mobile sur rocker)
+    const SFrame = getPivot(pivotsMm, "Frame/Shock eye");      // shock eye frame
+    const SRocker = getPivot(pivotsMm, "Rocker/Shock eye");    // shock eye rocker (mobile avec rocker)
+
+    // longueurs constantes
+    const L_OH = dist(O, H);          // chainstay segment
+    const L_HRS = dist(H, RS);        // seatstay segment
+    const L_RF_RS = dist(RF, RS);     // rocker link
+    const L_RF_SR = dist(RF, SRocker);// rocker->shock eye
+    const L0 = dist(SFrame, SRocker); // longueur amorto à l'état initial
+
+    // angle initial de la chainstay autour de O
+    const theta0 = Math.atan2(H.y - O.y, H.x - O.x);
+
+    const shock = [];
+    const wheel = [];
+
+    // on fait varier theta (rotation chainstay) -> calcule Hpos
+    const span = Math.PI / 2;
+    // On pousse plutôt vers compression : plus de rotation dans un sens
+    for (let i = 0; i < steps; i++) {
+      const t = -span * 0.15 + (span * 0.85) * (i / (steps - 1));
+      const theta = theta0 + t;
+
+      const Hpos = { x: O.x + L_OH * Math.cos(theta), y: O.y + L_OH * Math.sin(theta) };
+
+      // fermeture : RSpos = intersection cercles (centre=Hpos, r=L_HRS) et (centre=RF, r=L_RF_RS)
+      const sols = circleCircleIntersection(Hpos, L_HRS, RF, L_RF_RS);
+      if (sols.length === 0) continue;
+
+      // choisir la solution la plus proche de la position initiale RS (continuité)
+      let RSpos = sols[0];
+      if (sols.length === 2) {
+        const d0 = dist(sols[0], RS);
+        const d1 = dist(sols[1], RS);
+        RSpos = (d0 <= d1) ? sols[0] : sols[1];
+      }
+
+      // rocker orientation : angle RF->RSpos
+      const phi = Math.atan2(RSpos.y - RF.y, RSpos.x - RF.x);
+
+      // position du shock eye sur rocker (à distance constante L_RF_SR)
+      // On suppose que SRocker est "à un angle fixe" par rapport au rocker dans l'état initial.
+      const phi0 = Math.atan2(RS.y - RF.y, RS.x - RF.x);
+      const psi0 = Math.atan2(SRocker.y - RF.y, SRocker.x - RF.x);
+      const delta = psi0 - phi0; // offset constant sur le rocker
+      const SRpos = { x: RF.x + L_RF_SR * Math.cos(phi + delta), y: RF.y + L_RF_SR * Math.sin(phi + delta) };
+
+      // roue : on suppose rear axle lié à la chainstay rigidement autour de O (approx)
+      // => Rpos = rotation de (R0 autour de O) avec même delta angle que H
+      const L_OR = dist(O, R0);
+      const thetaR0 = Math.atan2(R0.y - O.y, R0.x - O.x);
+      const dTheta = theta - theta0;
+      const Rpos = { x: O.x + L_OR * Math.cos(thetaR0 + dTheta), y: O.y + L_OR * Math.sin(thetaR0 + dTheta) };
+
+      const L = dist(SFrame, SRpos);
+      const stroke = L0 - L;
+
+      shock.push(stroke);
+      wheel.push(Rpos.y - R0.y);
+    }
+
+    // tri / filtre
+    const pairs = shock.map((s, i) => ({ s, w: wheel[i] }))
+      .filter(p => Number.isFinite(p.s) && Number.isFinite(p.w));
+
+    pairs.sort((a, b) => a.s - b.s);
+
+    const sMax = meta?.shockStroke > 0 ? meta.shockStroke : pairs[pairs.length - 1].s;
+    const filtered = pairs.filter(p => p.s >= 0 && p.s <= sMax);
+
+    let shockArr = filtered.map(p => p.s);
+    let wheelArr = filtered.map(p => p.w);
+
+    // wheel positive
+    if (wheelArr.length > 2 && wheelArr[wheelArr.length - 1] < 0) wheelArr = wheelArr.map(v => -v);
+
+    // recale max wheel = rearTravel si dispo
+    if (meta?.rearTravel > 0 && wheelArr.length > 2) {
+      const wMax = wheelArr[wheelArr.length - 1];
+      if (Math.abs(wMax) > 1e-6) {
+        const scale = meta.rearTravel / wMax;
+        wheelArr = wheelArr.map(v => v * scale);
+      }
+    }
+
+    const ratio = finiteDiffRatio(shockArr, wheelArr);
+    const curve = { shock: shockArr, wheel: wheelArr, ratio };
+    curve.shockToWheel = buildShockToWheel(curve);
+    return curve;
+  }
+
+  throw new Error(`Leverage curve: pivotType "${pivotType}" not supported yet.`);
+}
+
+/**
+ * Charge un fichier géométrie (CSV exporté par ton app) et calcule leverageCurve.
+ */
+function loadGeometryFileAndComputeCurve(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const csvText = reader.result;
+        const parsed = parseGeometryCSVText(csvText);
+
+        geometryMeta = parsed.meta;
+        pivotPointsMm = parsed.pivots;
+
+        const pivotType = document.querySelector('select[name="pivottype"]').value;
+
+        leverageCurve = computeLeverageCurve(pivotType, pivotPointsMm, geometryMeta);
+        console.log("[Leverage] computed from file:", leverageCurve);
+        resolve(leverageCurve);
+      } catch (e) {
+        console.error(e);
+        reject(e);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+    /* #endregion */
 
     /* #region Pivot types */
 const MonopivotLabels = [
@@ -171,11 +583,19 @@ document.getElementById("load-geometry").addEventListener("click", () => {
     tempInput.style.display = "none";
     document.body.appendChild(tempInput);
 
-    tempInput.addEventListener("change", (event) => {
+    tempInput.addEventListener("change", async (event) => {
         kinematicsFile = event.target.files[0];
         useLinearKinematics = false;
         closePopup();
         document.body.removeChild(tempInput);
+
+        try {
+            await loadGeometryFileAndComputeCurve(kinematicsFile);
+            alert("Geometry loaded + leverage curve computed!");
+        } catch (e) {
+            alert("Loaded geometry, but failed to compute leverage curve.\nCheck console for details.");
+        }
+
         removeGeometryTab();
     }, { once: true });
 
@@ -200,14 +620,18 @@ document.getElementById("length-submit").addEventListener("click", () => {
     // --- Début logique calcul du ratio ---
 
     // Map entre type de longueur de référence et pivots associés
-    // ⚠️ Les clés ("wheelbase", "shock-length-monopivot", etc.)
-    // doivent correspondre exactement aux value des <option> du select HTML.
+    const pivotType = document.querySelector('select[name="pivottype"]').value;
+
     const referenceLengthMap = {
         "wheelbase": ["Rear axle", "Front axle"],
-        "shock-length-monopivot": ["Frame/shock eye", "Rear triangle/shock eye"],
-        "shock-length-4bar": ["Frame/Shock eye", "Rocker/Shock eye"],
         "chainstay": ["Crank axle", "Rear axle"],
-        // Ajoute d'autres types si besoin
+        "shock": (() => {
+            // Selon ton naming de pivots
+            if (pivotType === "monopivot") return ["Frame/shock eye", "Rear triangle/shock eye"];
+            if (pivotType === "horstlink4") return ["Frame/Shock eye", "Rocker/Shock eye"];
+            // fallback : tente la version 4-bar
+            return ["Frame/Shock eye", "Rocker/Shock eye"];
+        })()
     };
 
     const pointLabels = referenceLengthMap[type];
@@ -1104,12 +1528,25 @@ async function updateSubplot() {
         if (Mark) console.log('[updateSubplot] Mark (num) head:', Mark.slice(0, 20), 'NaN=', countNaN(Mark));
 
         const Front = Pot1.map(v => (v / frontPotVal) * frontPotLen);
-        const Rear = Pot2.map(v => (v / rearPotVal) * rearPotLen);
 
-        await updateRawPlot(Rear, Front, Time);
-        await updatePositionPlots(Rear, Front);
-        await updateDeltaPlot(Rear, Front, Time);
-        await updateSpeedPlot(Rear, Front, Time);
+        // Ici Rear = course mesurée par le potentiomètre arrière (souvent assimilée à shock stroke)
+        const RearStroke = Pot2.map(v => (v / rearPotVal) * rearPotLen);
+
+        // Conversion shock(mm) -> wheel(mm)
+        let RearWheel = RearStroke;
+
+        if (leverageCurve && typeof leverageCurve.shockToWheel === "function") {
+            RearWheel = RearStroke.map(s => leverageCurve.shockToWheel(s));
+        } else if (geometryMeta && geometryMeta.rearTravel > 0 && geometryMeta.shockStroke > 0) {
+            // fallback linéaire si pas de cinématique
+            const linRatio = geometryMeta.rearTravel / geometryMeta.shockStroke;
+            RearWheel = RearStroke.map(s => s * linRatio);
+        }
+
+        await updateRawPlot(RearWheel, Front, Time);
+        await updatePositionPlots(RearWheel, Front);
+        await updateDeltaPlot(RearWheel, Front, Time);
+        await updateSpeedPlot(RearWheel, Front, Time);
 
         // Graph 8 : table de laps
         await updateLapInfo(Time, Mark);
