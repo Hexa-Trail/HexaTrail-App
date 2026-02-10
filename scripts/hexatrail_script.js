@@ -14,6 +14,14 @@ const tabContents = document.querySelectorAll(".tab-content");
 // Nouvelles variables pour la conversion pixels → millimètres
 let pxToMmRatio = 1.0;      // Ratio px/mm
 let pivotPointsMm = [];     // Coordonnées converties en mm
+
+// ===== Universal leverage solver globals =====
+let leverageCurve = null;
+
+let geometryMeta = {
+  rearTravel: 0,     // mm
+  shockStroke: 0     // mm
+};
 /* #endregion */
 
     /* #region Fonctions calcul pivot */
@@ -61,6 +69,36 @@ function convertPivotsToMm() {
     alert("Geometry successfully captured and converted to millimeters!");
 
     // C’est ici que tu brancheras ton moteur cinématique plus tard
+    try {
+        // récupérer les meta depuis tes inputs si tu les as dans l’UI
+        const rearTravelInput  = document.getElementById("rearTravel");
+        const shockTravelInput = document.getElementById("ShockTravel");
+
+        geometryMeta.rearTravel  = Number(rearTravelInput?.value || 0);
+        geometryMeta.shockStroke = Number(shockTravelInput?.value || 0);
+
+        const pivotTypeRaw = String(document.querySelector('select[name="pivottype"]').value || "");
+        const pivotType = pivotTypeRaw.toLowerCase();
+        console.log("Available pivot labels:", pivotPointsMm.map(p => p.label));
+
+        if (pivotType.includes("mono")) {
+            const preset = presetMonopivotFromPivots(pivotPointsMm, geometryMeta);
+            leverageCurve = computeLeverageCurveUniversal(preset, 220, geometryMeta);
+            showLeverageCurveInGeometryCanvas();
+        }
+        else if (pivotType.includes("horst")) {
+            const preset = presetHorstLink4FromPivots(pivotPointsMm, geometryMeta);
+            leverageCurve = computeLeverageCurveUniversal(preset, 240, geometryMeta);
+            showLeverageCurveInGeometryCanvas();
+        }
+        else {
+            alert("Universal solver: preset not implemented for this type yet.");
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Universal solver failed — check console.");
+    }
+
 }
 /* #endregion */
 
@@ -1356,3 +1394,443 @@ Plotly.newPlot('plots_container', data, layout);
 
 /* #endregion */
 
+/* #region Solver */
+/* #region universal solver functions */
+// ===== Universal mechanism solver (LM) =====
+function dist2(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+
+function lerp1D(xs, ys, x) {
+  if (!xs || xs.length < 2) return NaN;
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[xs.length - 1]) return ys[ys.length - 1];
+  for (let i = 0; i < xs.length - 1; i++) {
+    const x0 = xs[i], x1 = xs[i + 1];
+    if (x >= x0 && x <= x1) {
+      const t = (x - x0) / (x1 - x0 || 1e-12);
+      return ys[i] + t * (ys[i + 1] - ys[i]);
+    }
+  }
+  return ys[ys.length - 1];
+}
+
+function solveLinearSystem(A, b) {
+  const n = b.length;
+  const M = A.map(row => Float64Array.from(row));
+  const x = Float64Array.from(b);
+
+  for (let k = 0; k < n; k++) {
+    let piv = k, best = Math.abs(M[k][k]);
+    for (let i = k + 1; i < n; i++) {
+      const v = Math.abs(M[i][k]);
+      if (v > best) { best = v; piv = i; }
+    }
+    if (best < 1e-12) return new Float64Array(n); // singular
+
+    if (piv !== k) {
+      const tmp = M[k]; M[k] = M[piv]; M[piv] = tmp;
+      const t2 = x[k]; x[k] = x[piv]; x[piv] = t2;
+    }
+
+    const diag = M[k][k];
+    for (let j = k; j < n; j++) M[k][j] /= diag;
+    x[k] /= diag;
+
+    for (let i = 0; i < n; i++) {
+      if (i === k) continue;
+      const f = M[i][k];
+      for (let j = k; j < n; j++) M[i][j] -= f * M[k][j];
+      x[i] -= f * x[k];
+    }
+  }
+  return x;
+}
+
+function buildMechanism(points, constraints) {
+  const pointsById = new Map(points.map(p => [p.id, { ...p }]));
+  const varIds = points.filter(p => !p.fixed).map(p => p.id);
+
+  const varsIndex = new Map();
+  let k = 0;
+  for (const id of varIds) { varsIndex.set(id, [k, k + 1]); k += 2; }
+
+  function packX() {
+    const X = new Float64Array(k);
+    for (const id of varIds) {
+      const p = pointsById.get(id);
+      const [ix, iy] = varsIndex.get(id);
+      X[ix] = p.x; X[iy] = p.y;
+    }
+    return X;
+  }
+
+  function unpackX(X) {
+    for (const id of varIds) {
+      const [ix, iy] = varsIndex.get(id);
+      const p = pointsById.get(id);
+      p.x = X[ix]; p.y = X[iy];
+    }
+  }
+
+  function getPos(id, X) {
+    const p = pointsById.get(id);
+    if (!p) throw new Error(`Unknown point id: ${id}`);
+    if (p.fixed) return { x: p.x, y: p.y };
+    const [ix, iy] = varsIndex.get(id);
+    return { x: X[ix], y: X[iy] };
+  }
+
+  function residuals(X, L) {
+    const r = new Float64Array(constraints.length);
+    for (let i = 0; i < constraints.length; i++) {
+      const c = constraints[i];
+      const A = getPos(c.a, X);
+      const B = getPos(c.b, X);
+      const d = Math.hypot(A.x - B.x, A.y - B.y);
+      const target = (c.type === "shock") ? c.target(L) : c.dist;
+      r[i] = d - target;
+    }
+    return r;
+  }
+
+  function jacobianNumeric(X, L, eps = 1e-6) {
+    const m = constraints.length;
+    const n = X.length;
+    const J = Array.from({ length: m }, () => new Float64Array(n));
+    const r0 = residuals(X, L);
+    for (let j = 0; j < n; j++) {
+      const Xp = X.slice();
+      Xp[j] += eps;
+      const rp = residuals(Xp, L);
+      for (let i = 0; i < m; i++) J[i][j] = (rp[i] - r0[i]) / eps;
+    }
+    return { J, r0 };
+  }
+
+  function solveForShockLength(L, { maxIter = 35, lambda0 = 1e-2, tol = 1e-6 } = {}) {
+    let X = packX();
+    let lambda = lambda0;
+
+    for (let it = 0; it < maxIter; it++) {
+      const { J, r0 } = jacobianNumeric(X, L);
+      const err = Math.sqrt(r0.reduce((s, v) => s + v*v, 0) / r0.length);
+      if (err < tol) { unpackX(X); return { ok: true, err, it }; }
+
+      const n = X.length;
+      const A = Array.from({ length: n }, () => new Float64Array(n));
+      const b = new Float64Array(n);
+
+      for (let i = 0; i < J.length; i++) {
+        const Ji = J[i];
+        const ri = r0[i];
+        for (let a = 0; a < n; a++) {
+          b[a] += Ji[a] * ri;
+          for (let c = 0; c < n; c++) A[a][c] += Ji[a] * Ji[c];
+        }
+      }
+      for (let a = 0; a < n; a++) A[a][a] += lambda;
+
+      const delta = solveLinearSystem(A, Array.from(b, v => -v));
+      const Xcand = X.slice();
+      for (let j = 0; j < n; j++) Xcand[j] += delta[j];
+
+      const rc = residuals(Xcand, L);
+      const errc = Math.sqrt(rc.reduce((s, v) => s + v*v, 0) / rc.length);
+
+      if (errc < err) { X = Xcand; lambda *= 0.6; }
+      else { lambda *= 2.0; }
+    }
+    unpackX(X);
+    return { ok: false, err: NaN, it: maxIter };
+  }
+
+  return {
+    solveForShockLength,
+    getPoint(id) { return pointsById.get(id); }
+  };
+}
+
+function cumulativeArc(pos) {
+  const arc = new Array(pos.length).fill(0);
+  let cum = 0;
+  for (let i = 1; i < pos.length; i++) {
+    cum += Math.hypot(pos[i].x - pos[i-1].x, pos[i].y - pos[i-1].y);
+    arc[i] = cum;
+  }
+  return arc;
+}
+
+function resampleUniform(shock, wheel, step = 0.25) {
+  if (shock.length < 2) return { shock: [], wheel: [] };
+  const sMin = shock[0], sMax = shock[shock.length - 1];
+  const sU = [], wU = [];
+  for (let s = sMin; s <= sMax + 1e-9; s += step) {
+    sU.push(s);
+    wU.push(lerp1D(shock, wheel, s));
+  }
+  return { shock: sU, wheel: wU };
+}
+
+function centralDiff(x, y) {
+  const r = new Array(x.length).fill(NaN);
+  for (let i = 1; i < x.length - 1; i++) {
+    const dx = x[i + 1] - x[i - 1];
+    const dy = y[i + 1] - y[i - 1];
+    r[i] = Math.abs(dx) < 1e-12 ? r[i - 1] : (dy / dx);
+  }
+  if (x.length > 1) { r[0] = r[1]; r[r.length - 1] = r[r.length - 2]; }
+  return r;
+}
+
+function normLabel(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")   // enlève espaces, _ et -
+    .replace(/\//g, "")       // enlève /
+    .replace(/:/g, "")
+    .trim();
+}
+
+function getPivotByAliases(pivotsMm, aliases) {
+  // aliases: tableau de noms possibles
+  const wanted = aliases.map(normLabel);
+
+  for (const p of pivotsMm) {
+    const lp = normLabel(p.label);
+    if (wanted.includes(lp)) return { x: Number(p.x), y: Number(p.y), label: p.label };
+  }
+
+  // debug utile: montrer les labels dispo
+  const available = pivotsMm.map(p => p.label);
+  throw new Error(`Missing pivot. Tried: [${aliases.join(" | ")}]. Available: ${available.join(", ")}`);
+}
+/* #endregion */
+
+/* #region Presets */
+// ===== Preset monopivot =====
+function presetMonopivotFromPivots(pivotsMm, meta) {
+  function get(label) {
+    const p = pivotsMm.find(q => q.label === label);
+    if (!p) throw new Error(`Missing pivot: "${label}"`);
+    return { x: Number(p.x), y: Number(p.y) };
+  }
+
+  const A  = get("Frame/rear triangle pivot");
+  const R  = get("Rear axle");
+  const SF = get("Frame/shock eye");
+  const SR = get("Rear triangle/shock eye");
+
+  const Lmax = dist2(SF, SR);
+  const shockStroke = meta?.shockStroke > 0 ? meta.shockStroke : 50;
+  const Lmin = Lmax - shockStroke;
+
+  const points = [
+    { id: "A",  ...A,  fixed: true },
+    { id: "SF", ...SF, fixed: true },
+    { id: "R",  ...R,  fixed: false },
+    { id: "SR", ...SR, fixed: false }
+  ];
+
+const constraints = [
+    { a: "A",  b: "R",  dist: dist2(A, R) },    // pivot principal -> axe roue
+    { a: "A",  b: "SR", dist: dist2(A, SR) },   // pivot principal -> oeil amorto (bras)
+    { a: "R",  b: "SR", dist: dist2(R, SR) },   // 🔥 rigidifie le triangle arrière
+    { type: "shock", a: "SF", b: "SR", target: (L) => L }
+];
+
+  return { points, constraints, Lmax, Lmin, wheelPointId: "R" };
+}
+
+// Universal preset
+function computeLeverageCurveUniversal(preset, steps = 200, meta = null) {
+  const mech = buildMechanism(preset.points, preset.constraints);
+
+  const shock = [];
+  const wheelPos = [];
+
+  const Lmax = preset.Lmax;
+  const Lmin = preset.Lmin;
+
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const L = Lmax + (Lmin - Lmax) * t; // extension -> compression
+
+    const res = mech.solveForShockLength(L, { maxIter: 40, lambda0: 1e-2, tol: 1e-6 });
+    if (!res.ok) continue;
+
+    const Pw = mech.getPoint(preset.wheelPointId);
+    wheelPos.push({ x: Pw.x, y: Pw.y });
+    shock.push(Lmax - L); // stroke
+  }
+
+  if (wheelPos.length < 5) {
+    return { shock: [], wheel: [], ratio: [], shockToWheel: (s) => s };
+  }
+
+  // --- Wheel travel: vertical displacement (recommended) ---
+  const y0 = wheelPos[0].y;
+  let wheel = wheelPos.map(p => p.y - y0);
+
+  // Compression should be positive
+  if (wheel[wheel.length - 1] < 0) wheel = wheel.map(v => -v);
+
+  // Rebase to start at 0
+  const wStart = wheel[0];
+  wheel = wheel.map(v => v - wStart);
+
+  // Optional: scale to match known rearTravel
+  if (meta && meta.rearTravel > 0) {
+    const wMax = wheel[wheel.length - 1];
+    if (Math.abs(wMax) > 1e-9) {
+      const scale = meta.rearTravel / wMax;
+      wheel = wheel.map(v => v * scale);
+    }
+  }
+
+  // Uniform resample + central diff ratio
+  const uniform = resampleUniform(shock, wheel, 0.25);
+  const ratio = centralDiff(uniform.shock, uniform.wheel);
+
+  return {
+    shock: uniform.shock,
+    wheel: uniform.wheel,
+    ratio,
+    shockToWheel: (s) => lerp1D(uniform.shock, uniform.wheel, s)
+  };
+}
+
+// Horstlink preset
+function presetHorstLink4FromPivots(pivotsMm, meta) {
+  // Aliases (ajoute tes variantes ici si besoin)
+  const O  = getPivotByAliases(pivotsMm, ["Wheelstay/Frame pivot", "Chainstay/Frame pivot", "Rear triangle/Frame pivot"]);
+  const B  = getPivotByAliases(pivotsMm, ["Wheelstay/Seatstay pivot", "Chainstay/Seatstay pivot", "Horst pivot"]);
+  const R  = getPivotByAliases(pivotsMm, ["Rear axle", "Rear Axle"]);
+  const C  = getPivotByAliases(pivotsMm, ["Seatstay/Rocker pivot", "Seatstay/Rocker"]);
+  const RF = getPivotByAliases(pivotsMm, ["Rocker/Frame pivot", "Rocker pivot", "Link/Frame pivot"]);
+  const SR = getPivotByAliases(pivotsMm, ["Rocker/Shock eye", "Rocker/shock eye", "Link/Shock eye"]);
+  const SF = getPivotByAliases(pivotsMm, ["Frame/Shock eye", "Frame/shock eye", "Shock eye/frame"]);
+
+  const Lmax = dist2(SF, SR);
+  const shockStroke = meta?.shockStroke > 0 ? meta.shockStroke : 50;
+  const Lmin = Lmax - shockStroke;
+
+  const points = [
+    { id: "O",  x: O.x,  y: O.y,  fixed: true  },
+    { id: "RF", x: RF.x, y: RF.y, fixed: true  },
+    { id: "SF", x: SF.x, y: SF.y, fixed: true  },
+
+    { id: "B",  x: B.x,  y: B.y,  fixed: false },
+    { id: "R",  x: R.x,  y: R.y,  fixed: false },
+    { id: "C",  x: C.x,  y: C.y,  fixed: false },
+    { id: "SR", x: SR.x, y: SR.y, fixed: false }
+  ];
+
+  // Wheelstay rigid (triangle O-B-R)
+  const d_OB = dist2(O, B);
+  const d_OR = dist2(O, R);
+  const d_BR = dist2(B, R);
+
+  // Seatstay (B-C)
+  const d_BC = dist2(B, C);
+
+  // Rocker rigid (triangle RF-C-SR)
+  const d_RFC  = dist2(RF, C);
+  const d_RFSR = dist2(RF, SR);
+  const d_CSR  = dist2(C, SR);
+
+  const constraints = [
+    { a: "O",  b: "B",  dist: d_OB },
+    { a: "O",  b: "R",  dist: d_OR },
+    { a: "B",  b: "R",  dist: d_BR },
+
+    { a: "B",  b: "C",  dist: d_BC },
+
+    { a: "RF", b: "C",  dist: d_RFC },
+    { a: "RF", b: "SR", dist: d_RFSR },
+    { a: "C",  b: "SR", dist: d_CSR },
+
+    { type: "shock", a: "SF", b: "SR", target: (L) => L }
+  ];
+
+  console.log("[Horst preset] Using labels:", { O: O.label, B: B.label, R: R.label, C: C.label, RF: RF.label, SR: SR.label, SF: SF.label });
+
+  return { points, constraints, Lmax, Lmin, wheelPointId: "R" };
+}
+/* #endregion */
+
+/* #endregion */
+
+/* #region plotting ratio curve */
+function showLeverageCurveInGeometryCanvas() {
+    if (!window.Plotly) {
+        console.warn("Plotly not loaded.");
+        return;
+    }
+    if (!leverageCurve || !leverageCurve.shock || leverageCurve.shock.length < 2) {
+        console.warn("No leverage curve to display.");
+        return;
+    }
+
+    const canvas = document.getElementById("geometry_canvas");
+    const wrapper = document.getElementById("geometry-wrapper");
+    if (!canvas || !wrapper) return;
+
+    // Masquer le canvas (on ne le détruit pas)
+    canvas.style.display = "none";
+
+    // Créer ou récupérer le div Plotly
+    let plotDiv = document.getElementById("geometry_plot");
+    if (!plotDiv) {
+        plotDiv = document.createElement("div");
+        plotDiv.id = "geometry_plot";
+        plotDiv.style.width = canvas.style.width || "100%";
+        plotDiv.style.height = canvas.height
+            ? `${canvas.height}px`
+            : "420px";
+        plotDiv.style.borderRadius = "12px";
+        plotDiv.style.background = "rgba(255,255,255,0.95)";
+        plotDiv.style.margin = "0 auto";
+
+        wrapper.appendChild(plotDiv);
+    }
+
+    plotDiv.style.display = "block";
+
+    const shock = leverageCurve.shock;
+    const wheel = leverageCurve.wheel;
+    const ratio = leverageCurve.ratio || [];
+
+    const traces = [
+        {
+            x: shock,
+            y: wheel,
+            mode: "lines",
+            name: "Wheel travel",
+            line: { width: 3 }
+        }
+    ];
+
+    if (ratio.length === shock.length) {
+        traces.push({
+            x: shock,
+            y: ratio,
+            mode: "lines",
+            name: "Leverage ratio",
+            yaxis: "y2",
+            line: { dash: "dot", width: 2 }
+        });
+    }
+
+    Plotly.newPlot(plotDiv, traces, {
+        title: "Computed leverage curve",
+        xaxis: { title: "Shock stroke (mm)" },
+        yaxis: { title: "Wheel travel (mm)" },
+        yaxis2: {
+            title: "Ratio (mm/mm)",
+            overlaying: "y",
+            side: "right"
+        },
+        margin: { t: 50, r: 60, b: 50, l: 60 },
+        showlegend: true
+    }, { responsive: true });
+}
+/* #endregion */
