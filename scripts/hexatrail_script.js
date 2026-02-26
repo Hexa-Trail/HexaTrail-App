@@ -104,45 +104,53 @@ function convertPivotsToMm() {
 
     /* #region Pivot types */
 const MonopivotLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Frame/shock eye",
-    "Rear triangle/shock eye", "Frame/rear triangle pivot"
-];
-const FourBarsMonopivot1Labels = [
-    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Seatstay pivot",
-    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
-];
-const FourBarsMonopivot2Labels = [
-    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Rocker pivot",
-    "Seatstay/Rocker pivot", "Seatstay/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle",
+    "Frame/rear triangle pivot",
+    "Frame/shock eye", "Rear triangle/shock eye"
 ];
 const FlexstayLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Rocker pivot",
-    "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle",
+    "Rear triangle/Frame pivot", "Rear triangle/Rocker pivot", "Rocker/Frame pivot", 
+    "Rocker/Shock eye", "Frame/Shock eye"
 ];
+// = 4 bars
+const FourBarsMonopivot1Labels = [
+    "Rear axle", "Front axle", "Crank axle", 
+    "Chainstay/Frame pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot", "Rocker/Frame pivot", 
+    "Rocker/Shock eye", "Frame/Shock eye"
+];
+// = 4 bars
+const FourBarsMonopivot2Labels = [
+    "Rear axle", "Front axle", "Crank axle", 
+    "Chainstay/Frame pivot", "Chainstay/Rocker pivot", "Seatstay/Rocker pivot", "Seatstay/Frame pivot", 
+    "Rocker/Shock eye", "Frame/Shock eye"
+];
+// = 4 bars
 const SplitpivotLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Wheelstay/Frame pivot", "Wheelstay/Rocker pivot",
-    "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle",
+    "Chainstay/Frame pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot", "Rocker/Frame pivot", 
+    "Rocker/Shock eye", "Frame/Shock eye"
 ];
+// = 4 bars
 const HorstLink4Labels = [
-    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
-    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle",
+    "Chainstay/Frame pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot", "Rocker/Frame pivot",
+    "Rocker/Shock eye", "Frame/Shock eye"
 ];
 const HorstLink4FloatingLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
-    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Chainstay/Shock eye"
-];
-const HorstLink6Labels = [
-    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
-    "Seatstay/Rocker pivot", "Rocker/Rocker-Bar pivot", "Rocker-Bar/Shock eye", "Chainstay-Bar/Shock eye",
-    "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle", 
+    "Chainstay/Frame pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot", "Rocker/Frame pivot",
+    "Rocker/Shock eye", "Chainstay/Shock eye" /* this line differs from the standard HorstLink4, where the shock eye is on the frame */
 ];
 const SeatstayLinkLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Chainstay/Frame pivot", "Chainstay/Seatstay pivot",
-    "Seatstay/Rocker pivot", "Rocker/Frame pivot", "Seatstay/Shock eye", "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle", 
+    "Chainstay/Frame pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot", "Rocker/Frame pivot",
+    "Seatstay/Shock eye", "Frame/Shock eye" /* this line differs from the standard HorstLink4, where the shock eye is on the seatstay */
 ];
 const DWLinkvppLabels = [
-    "Rear axle", "Front axle", "Crank axle", "Short link/Frame pivot", "Short link/Rear triangle pivot", 
-    "Rear triangle/Rocker pivot", "Rocker/Frame pivot", "Rocker/Shock eye", "Frame/Shock eye"
+    "Rear axle", "Front axle", "Crank axle",
+    "Short link/Frame pivot", "Short link/Rear triangle pivot", "Rear triangle/Rocker pivot", "Rocker/Frame pivot",
+    "Rocker/Shock eye", "Frame/Shock eye"
 ];
 const DWLinkvppFloatingLabels = [
     "Rear axle", "Front axle", "Crank axle", "Short link/Frame pivot", "Short link/Rear triangle pivot", 
@@ -151,6 +159,11 @@ const DWLinkvppFloatingLabels = [
 const FourBarsBBRockerLabels = [
     "Rear axle", "Front axle", "Crank axle", "Rocker/Frame pivot", "Rocker/Rear triangle pivot",
     "Rear triangle/Frame-bar pivot", "Frame/Frame-link pivot", "Rocker/Shock eye", "Frame/Shock eye"
+];
+const HorstLink6Labels = [
+    "Rear axle", "Front axle", "Crank axle",
+    "Chainstay/Frame pivot", "Chainstay/Seatstay pivot", "Seatstay/Rocker pivot", "Rocker/Rocker-Bar pivot",
+    "Rocker-Bar/Shock eye", "Chainstay-Bar/Shock eye", "Frame/Shock eye"
 ];
 const SixBarsDWLinkLabels = [
     "Rear axle", "Front axle", "Crank axle", "Lower Rocker/Frame pivot", "Lower Rocker/Chainstay pivot",
@@ -1606,40 +1619,6 @@ function getPivotByAliases(pivotsMm, aliases) {
 /* #endregion */
 
 /* #region Presets */
-// ===== Preset monopivot =====
-function presetMonopivotFromPivots(pivotsMm, meta) {
-  function get(label) {
-    const p = pivotsMm.find(q => q.label === label);
-    if (!p) throw new Error(`Missing pivot: "${label}"`);
-    return { x: Number(p.x), y: Number(p.y) };
-  }
-
-  const A  = get("Frame/rear triangle pivot");
-  const R  = get("Rear axle");
-  const SF = get("Frame/shock eye");
-  const SR = get("Rear triangle/shock eye");
-
-  const Lmax = dist2(SF, SR);
-  const shockStroke = meta?.shockStroke > 0 ? meta.shockStroke : 50;
-  const Lmin = Lmax - shockStroke;
-
-  const points = [
-    { id: "A",  ...A,  fixed: true },
-    { id: "SF", ...SF, fixed: true },
-    { id: "R",  ...R,  fixed: false },
-    { id: "SR", ...SR, fixed: false }
-  ];
-
-const constraints = [
-    { a: "A",  b: "R",  dist: dist2(A, R) },    // pivot principal -> axe roue
-    { a: "A",  b: "SR", dist: dist2(A, SR) },   // pivot principal -> oeil amorto (bras)
-    { a: "R",  b: "SR", dist: dist2(R, SR) },   // 🔥 rigidifie le triangle arrière
-    { type: "shock", a: "SF", b: "SR", target: (L) => L }
-];
-
-  return { points, constraints, Lmax, Lmin, wheelPointId: "R" };
-}
-
 // Universal preset
 function computeLeverageCurveUniversal(preset, steps = 200, meta = null) {
   const mech = buildMechanism(preset.points, preset.constraints);
@@ -1698,6 +1677,40 @@ function computeLeverageCurveUniversal(preset, steps = 200, meta = null) {
   };
 }
 
+// Preset monopivot
+function presetMonopivotFromPivots(pivotsMm, meta) {
+  function get(label) {
+    const p = pivotsMm.find(q => q.label === label);
+    if (!p) throw new Error(`Missing pivot: "${label}"`);
+    return { x: Number(p.x), y: Number(p.y) };
+  }
+
+  const A  = get("Frame/rear triangle pivot");
+  const R  = get("Rear axle");
+  const SF = get("Frame/shock eye");
+  const SR = get("Rear triangle/shock eye");
+
+  const Lmax = dist2(SF, SR);
+  const shockStroke = meta?.shockStroke > 0 ? meta.shockStroke : 50;
+  const Lmin = Lmax - shockStroke;
+
+  const points = [
+    { id: "A",  ...A,  fixed: true },
+    { id: "SF", ...SF, fixed: true },
+    { id: "R",  ...R,  fixed: false },
+    { id: "SR", ...SR, fixed: false }
+  ];
+
+const constraints = [
+    { a: "A",  b: "R",  dist: dist2(A, R) },    // pivot principal -> axe roue
+    { a: "A",  b: "SR", dist: dist2(A, SR) },   // pivot principal -> oeil amorto (bras)
+    { a: "R",  b: "SR", dist: dist2(R, SR) },   // 🔥 rigidifie le triangle arrière
+    { type: "shock", a: "SF", b: "SR", target: (L) => L }
+];
+
+  return { points, constraints, Lmax, Lmin, wheelPointId: "R" };
+}
+
 // Horstlink preset
 function presetHorstLink4FromPivots(pivotsMm, meta) {
   // Aliases (ajoute tes variantes ici si besoin)
@@ -1724,7 +1737,7 @@ function presetHorstLink4FromPivots(pivotsMm, meta) {
     { id: "SR", x: SR.x, y: SR.y, fixed: false }
   ];
 
-  // Wheelstay rigid (triangle O-B-R)
+  // Chainstay rigid (triangle O-B-R)
   const d_OB = dist2(O, B);
   const d_OR = dist2(O, R);
   const d_BR = dist2(B, R);
